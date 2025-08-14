@@ -1,1 +1,16 @@
-spring.application.name: Internet Shop
+spring:
+  application:
+    name: Internet Shop
+
+  datasource:
+    driver-class-name: org.postgresql.Driver
+
+    url: ${INTERSHOP_DB_URL}
+    username: ${INTERSHOP_DB_USERNAME}
+    password: ${INTERSHOP_DB_PASSWORD}
+
+  liquibase:
+    change-log: classpath:/db/changelog/db.changelog-master.xml
+
+  upload.images.dir: C:/Users/79185/IdeaProjects/YandexPracticum Projects/sprint-5/intershop/src/main/webapp/images
+
