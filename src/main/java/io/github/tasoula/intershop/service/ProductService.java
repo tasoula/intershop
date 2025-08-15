@@ -6,6 +6,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @Service
 public class ProductService {
 
@@ -20,5 +22,10 @@ public class ProductService {
             return repository.findAll(pageable);
 
         return repository.findByTitleContainingOrDescriptionContainingIgnoreCase(search.toLowerCase(), pageable);
+    }
+
+    public Product findById(UUID id) {
+        //todo: обработка null
+        return repository.findById(id).get();
     }
 }

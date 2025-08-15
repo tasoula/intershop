@@ -74,4 +74,10 @@ public class ProductController {
 
         return "catalog.html";
     }
+
+    @GetMapping("items/{id}")
+    public String showItemById(@PathVariable("id") UUID id, Model model){
+        model.addAttribute("item", service.findById(id));
+        return "item.html";
+    }
 }
