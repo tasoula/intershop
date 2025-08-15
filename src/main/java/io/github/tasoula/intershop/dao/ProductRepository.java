@@ -14,5 +14,8 @@ import java.util.UUID;
 public interface ProductRepository extends JpaRepository<Product, UUID> {
     @Query("SELECT p FROM Product p WHERE LOWER(p.title) LIKE %:search% OR LOWER(p.description) LIKE %:search%")
     Page<Product> findByTitleContainingOrDescriptionContainingIgnoreCase(@Param("search") String search, Pageable pageable);
+
+    @Query("SELECT p.imgPath FROM Product p WHERE p.id = :id")
+    String findImgPathById(@Param("id") UUID id);
 }
 

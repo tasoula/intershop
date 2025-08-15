@@ -51,8 +51,11 @@
     <div class="items-grid">
         <div class="item-card" th:each="item : ${items}">
             <a th:href="${'/items/'+item.getId()}">
-                <img class="item-image" th:src="${'http://localhost:8080/'+item.getImgPath()}" alt="Item Image"/>
+              <!--  <img class="item-image" th:src="${'http://localhost:8080/'+item.getImgPath()}" alt="Item Image"/> -->
+
+                <img height = "300" th:src="@{/catalog/images/{id}(id = ${item.getId()})}"/>
             </a>
+
             <div class="item-title" th:text="${item.getTitle()}"></div>
             <div class="item-price" th:text="${item.getPrice() + ' руб.'}"></div>
             <!--<div class="item-description" th:text="${item.getDescriptionPreview()}"></div>-->

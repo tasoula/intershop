@@ -15,7 +15,6 @@ public class ProductService {
         this.repository = repository;
     }
 
-
     public Page<Product> findAll(String search, Pageable pageable) {
         if (search == null || search.isEmpty())
             return repository.findAll(pageable);
