@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.CurrentTimestamp;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -21,22 +20,22 @@ import java.util.UUID;
 public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    UUID id;
+    private UUID id;
 
     @ManyToOne
-    @JoinColumn(name = "customer_id", nullable = false)
-    Customer customer;
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Column(name = "delivery_address", nullable = false)
-    String deliveryAddress;
+    private String deliveryAddress;
 
     @Column(name = "created_at", nullable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
-    Timestamp createdAt;
+    private Timestamp createdAt;
 
     @Column(name = "total_amount", nullable = false)
-    BigDecimal totalAmount;
+    private BigDecimal totalAmount;
 
-    String status;
+    private String status;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> orderItems;

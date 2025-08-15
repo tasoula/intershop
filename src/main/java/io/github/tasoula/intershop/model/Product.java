@@ -17,7 +17,6 @@ import java.util.UUID;
 @Getter
 @Setter
 public class Product {
-
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;

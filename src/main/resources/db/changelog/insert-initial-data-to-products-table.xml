@@ -7,7 +7,7 @@
 
     <changeSet id="insert-initial-data-to-t_products" author="tasoula">
         <comment>Заполнение products из SQL файла</comment>
-        <sqlFile path="products_data.sql" relativeToChangelogFile="true" splitStatements="true" stripComments="true"/>
+        <sqlFile path="sql-scripts/insert-initial-data-to-t_products.sql" relativeToChangelogFile="true" splitStatements="true" stripComments="true"/>
     </changeSet>
 
 </databaseChangeLog>
