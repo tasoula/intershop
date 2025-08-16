@@ -4,6 +4,18 @@
     <meta charset="UTF-8"/>
     <title>Витрина товаров</title>
     <link rel="stylesheet" type="text/css" th:href="@{/css/styles.css}">
+    <style>
+        #cookie-banner {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: #f0f0f0;
+            padding: 10px;
+            text-align: center;
+            display: none; /* Скрываем изначально */
+        }
+    </style>
 </head>
 
 <body>
@@ -64,6 +76,29 @@
             </form>
         </div>
     </div>
+
+    <div id="cookie-banner">
+        Мы используем Cookie для идентификации пользователей и обеспечения работы корзины.  Используя этот сайт, вы соглашаетесь с использованием Cookie.
+        <button id="accept-cookies">OK</button>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const cookieBanner = document.getElementById("cookie-banner");
+            const acceptButton = document.getElementById("accept-cookies");
+
+            // Проверяем, показывали ли баннер раньше
+            if (!localStorage.getItem("cookieAccepted")) {
+                cookieBanner.style.display = "block"; // Показываем баннер
+            }
+
+            acceptButton.addEventListener("click", function() {
+                cookieBanner.style.display = "none"; // Скрываем баннер
+                localStorage.setItem("cookieAccepted", "true"); // Сохраняем информацию
+            });
+        });
+    </script>
+
 </div>
 </body>
 </html>
