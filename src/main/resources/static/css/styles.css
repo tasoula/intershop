@@ -1,0 +1,53 @@
+ .container {
+            width: 80%; /* Занимает 80% ширины экрана */
+            margin: 0 auto; /* Центрирование по горизонтали */
+        }
+
+      .items-grid {
+       display: grid;
+       grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); /* Адаптивное количество колонок */
+       gap: 20px; /* Отступы между элементами */
+   }
+
+   .item-card {
+       /* width: auto;  Больше не нужна фиксированная ширина */
+       margin-bottom: 0; /* Убираем margin-bottom, отступ задается в gap */
+       padding: 10px;
+       border: 1px solid #ddd;
+       text-align: center;
+   }
+
+        .item-image {
+            width: 100%;
+            height: auto;
+            max-height: 200px; /* ограничение максимальной высоты изображения */
+            object-fit: contain;  /* Сохраняем пропорции и вписываем в контейнер */
+
+        }
+
+        .item-title {
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .item-price {
+            margin-top: 5px;
+        }
+
+        .item-description {
+            margin-top: 5px;
+        }
+
+        .cart-form {
+            margin-top: 10px;
+        }
+
+        /* Стили для формы поиска и сортировки */
+        .filter-form {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .filter-form label {
+            margin-right: 10px;
+        }
