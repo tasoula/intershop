@@ -16,6 +16,39 @@
             display: none; /* Скрываем изначально */
         }
     </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('.cart-form button').click(function(event) {
+                event.preventDefault();
+
+                var itemId = $(this).closest('.item-card').find('a').attr('href').split('/').pop(); // item-card нет в HTML, но допустим, что это задумано.  Нужно будет добавить класс если это необходимо.
+                var action = $(this).val();
+                var $quantitySpan = $(this).siblings('span');
+                var $addToCartButton = $(this).siblings('.add-to-cart'); // Get the "В корзину" button
+
+                $.ajax({
+                    url: '/cart/items/' + itemId + '?action=' + action,
+                    type: 'POST',
+                    success: function(newQuantity) {
+                        // Update the quantity on the page
+                        $quantitySpan.text(newQuantity);
+
+                        // Show or hide the "В корзину" button based on the new quantity
+                        if (newQuantity == 0) {
+                            $addToCartButton.show();
+                        } else {
+                            $addToCartButton.hide();
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error("Ошибка при изменении количества: " + error);
+                        alert("Невозможно добавить больше товаров в корзину.  Превышен остаток.");
+                    }
+                });
+            });
+        });
+    </script>
 </head>
 
 <body>
@@ -65,14 +98,13 @@
             <a th:href="${'/catalog/items/'+item.getId()}">
                 <img height = "300" th:src="@{/catalog/images/{id}(id = ${item.getId()})}"/>
             </a>
-
             <div class="item-title" th:text="${item.getTitle()}"></div>
             <div class="item-price" th:text="${item.getPrice() + ' руб.'}"></div>
-            <form class="cart-form" th:action="${'/main/items/'+item.getId()}" method="post">
-                <button name="action" value="minus">-</button>
-                <span th:text="${item.getCount()}"></span>
-                <button name="action" value="plus">+</button>
-                <button name="action" value="plus" th:if="${item.getCount()==0}" style="float:right;">В корзину</button>
+            <form class="cart-form">
+                <button type="button" name="action" value="minus">-</button>
+                <span th:text="${item.getCartQuantity()}"></span>
+                <button type="button" name="action" value="plus">+</button>
+                <button type="button" name="action" value="plus" th:if="${item.getCartQuantity()==0}">В корзину</button>
             </form>
         </div>
     </div>
