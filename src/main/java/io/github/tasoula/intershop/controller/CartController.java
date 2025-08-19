@@ -1,12 +1,15 @@
 package io.github.tasoula.intershop.controller;
 
+import io.github.tasoula.intershop.dto.ProductCatalogItemDto;
 import io.github.tasoula.intershop.interceptor.UserInterceptor;
 import io.github.tasoula.intershop.service.ProductService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @Controller
@@ -21,10 +24,12 @@ public class CartController {
     }
 
 
-    @GetMapping("/cart")
-    public String viewCart(HttpServletRequest request) {
-        String userId = (String) request.getAttribute("userId");
-        return "Корзина пользователя с ID: " + userId;
+    @GetMapping("/items")
+    public String viewCart(HttpServletRequest request, Model model) {
+        UUID userId = UUID.fromString((String) request.getAttribute(UserInterceptor.USER_ID_COOKIE_NAME));
+        List<ProductCatalogItemDto> items = service.findById(userId);
+        model.addAttribute("items", items);
+        return "cart.html";
     }
 
     @PostMapping("items/{id}")

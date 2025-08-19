@@ -12,8 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -46,6 +45,14 @@ public class ProductService {
         return map(userId, product);
     }
 
+    public List<ProductCatalogItemDto> findById(UUID userId) {
+        List<CartItem> items = cartItemRepository.findByUserId(userId);
+
+        return items.stream()
+                .map(item -> map(item.getProduct(), item.getQuantity()))
+                .collect(Collectors.toList());
+    }
+
     private ProductCatalogItemDto map(UUID userId, Product product){
         int cartQuantity = 0;
         if(userId != null) {
@@ -54,6 +61,10 @@ public class ProductService {
                     .orElse(0); // Если нет записи в корзине, то 0
         }
 
+        return map(product, cartQuantity);
+    }
+
+    private ProductCatalogItemDto map(Product product, int cartQuantity){
         return new ProductCatalogItemDto(
                 product.getId(),
                 product.getTitle(),
