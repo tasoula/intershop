@@ -17,38 +17,7 @@
         }
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script>
-        $(document).ready(function() {
-            $('.cart-form button').click(function(event) {
-                event.preventDefault();
-
-                var itemId = $(this).closest('.item-card').find('a').attr('href').split('/').pop(); // item-card нет в HTML, но допустим, что это задумано.  Нужно будет добавить класс если это необходимо.
-                var action = $(this).val();
-                var $quantitySpan = $(this).siblings('span');
-                var $addToCartButton = $(this).siblings('.add-to-cart'); // Get the "В корзину" button
-
-                $.ajax({
-                    url: '/cart/items/' + itemId + '?action=' + action,
-                    type: 'POST',
-                    success: function(newQuantity) {
-                        // Update the quantity on the page
-                        $quantitySpan.text(newQuantity);
-
-                        // Show or hide the "В корзину" button based on the new quantity
-                        if (newQuantity == 0) {
-                            $addToCartButton.show();
-                        } else {
-                            $addToCartButton.hide();
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        console.error("Ошибка при изменении количества: " + error);
-                        alert("Невозможно добавить больше товаров в корзину.  Превышен остаток.");
-                    }
-                });
-            });
-        });
-    </script>
+    <script th:src="@{/js/cart.js}"></script>
 </head>
 
 <body>
@@ -94,7 +63,7 @@
     </div>
 
     <div class="items-grid">
-        <div class="item-card" th:each="item : ${items}">
+        <div class="item-card" th:each="item : ${items}" th:data-item-id="${item.getId()}">
             <a th:href="${'/catalog/items/'+item.getId()}">
                 <img height = "300" th:src="@{/catalog/images/{id}(id = ${item.getId()})}"/>
             </a>
@@ -104,11 +73,10 @@
                 <button type="button" name="action" value="minus">-</button>
                 <span th:text="${item.getCartQuantity()}"></span>
                 <button type="button" name="action" value="plus">+</button>
-                <button type="button" name="action" value="plus" th:if="${item.getCartQuantity()==0}">В корзину</button>
+                <button type="button" class="add-to-cart" name="action" value="plus">В корзину</button>
             </form>
         </div>
     </div>
-
     <div id="cookie-banner">
         Мы используем Cookie для идентификации пользователей и обеспечения работы корзины.  Используя этот сайт, вы соглашаетесь с использованием Cookie.
         <button id="accept-cookies">OK</button>

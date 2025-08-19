@@ -66,16 +66,23 @@ public class ProductService {
     }
 
 
+    //todo возможно этот метод надо перенести в CartService
     @Transactional
     public int changeCartQuantity(UUID userId, UUID productId, int changeQuantity) {
-        //todo обработка null
+        //todo обработка productId = null
         Product product = productRepository.findById(productId).get();
 
         CartItem cartItem = cartItemRepository.findByUserIdAndProductId(userId, productId)
-                .orElseGet(() -> new CartItem(null, new User(userId, null),  product, 0));
+                .orElseGet(() -> new CartItem(null, new User(userId, null), product, 0));
 
         int newQuantity = cartItem.getQuantity() + changeQuantity;
-        if(newQuantity >=0 && newQuantity <= product.getStockQuantity()) {
+
+        if (newQuantity == 0) {
+            cartItemRepository.delete(cartItem);
+            return 0;
+        }
+
+        if (newQuantity > 0 && newQuantity <= product.getStockQuantity()) {
             cartItem.setQuantity(newQuantity);
             cartItemRepository.save(cartItem);
         }

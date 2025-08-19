@@ -1,34 +1,10 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<meta charset="UTF-8"/>
 <head>
+    <meta charset="UTF-8"/>
     <title>Витрина товаров</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script>
-        $(document).ready(function() {
-            $('.cart-form button').click(function(event) {
-            event.preventDefault();
-
-            var itemId = $(this).closest('.item-card').find('a').attr('href').split('/').pop();
-            var action = $(this).val();
-            var $quantitySpan = $(this).siblings('span');
-
-            $.ajax({
-                url: '/catalog/items/' + itemId + '?action=' + action,
-                type: 'POST',
-                success: function(newQuantity) { // Get the new quantity from the server's response
-                    // Update the quantity on the page with the value returned by the server
-                    $quantitySpan.text(newQuantity);
-                },
-                error: function(xhr, status, error) {
-                    console.error("Ошибка при изменении количества: " + error);
-                    // Show an error message to the user
-                    alert("Невозможно добавить больше товаров в корзину.  Превышен остаток."); // Example error message
-                }
-         });
-     });
- });
-    </script>
+    <script th:src="@{/js/cart.js}"></script>
 </head>
 
 <body>
@@ -41,7 +17,9 @@
 <a href="/catalog/items" style="float:right;">
     <b>ГЛАВНАЯ &cudarrr;</b>
 </a>
-<div style="width:70%;margin-left:auto;margin-right:auto;">
+
+<!-- Обертка для каждого товара. data-item-id и класс item-card -->
+<div class="item-card" style="width:70%;margin-left:auto;margin-right:auto;" th:data-item-id="${item.getId()}">
     <p>
         <img height = "300" th:src="@{/catalog/images/{id}(id = ${item.getId()})}"/>
     </p>
@@ -52,13 +30,14 @@
     <div th:each="paragraph : ${item.getTextParts()}">
         <p th:text="${paragraph}"></p>
     </div>
+
     <form class="cart-form">
         <button type="button" name="action" value="minus">-</button>
         <span th:text="${item.getCartQuantity()}"></span>
         <button type="button" name="action" value="plus">+</button>
-        <button type="button" name="action" value="plus" th:if="${item.getCartQuantity()==0}">В корзину</button>
+        <button type="button" class="add-to-cart" name="action" value="plus">В корзину</button>
     </form>
 </div>
-</body>
 
+</body>
 </html>
