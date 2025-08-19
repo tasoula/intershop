@@ -1,6 +1,7 @@
 package io.github.tasoula.intershop.interceptor;
 
 import io.github.tasoula.intershop.service.UserService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import jakarta.servlet.http.Cookie;
@@ -13,7 +14,9 @@ import java.util.UUID;
 @Component
 public class UserInterceptor implements HandlerInterceptor {
 
-    private static final String USER_ID_COOKIE_NAME = "userId";
+    public static final String USER_ID_COOKIE_NAME = "userId"; // todo может вынести это в отдельное перечисление?
+    @Value("${cookie.max.age.seconds}")
+    private int coockieMaxAge;
 
     private final UserService service;
 
@@ -32,7 +35,7 @@ public class UserInterceptor implements HandlerInterceptor {
         if (userId == null) {
             userId = service.createUser().toString();
             Cookie cookie = new Cookie(USER_ID_COOKIE_NAME, userId);
-            cookie.setMaxAge(3600 * 24 * 30); // 30 days
+            cookie.setMaxAge(coockieMaxAge);
             cookie.setPath("/");
 
             cookie.setHttpOnly(true);
@@ -55,7 +58,7 @@ public class UserInterceptor implements HandlerInterceptor {
         }
 
         // Добавляем ID пользователя в атрибуты запроса, чтобы он был доступен в контроллерах
-        request.setAttribute("userId", userId);
+        request.setAttribute(USER_ID_COOKIE_NAME, userId);
 
         return true; // Продолжаем обработку запроса
     }
