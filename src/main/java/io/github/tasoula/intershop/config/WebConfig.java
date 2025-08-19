@@ -16,7 +16,7 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        //registry.addInterceptor(userInterceptor).addPathPatterns("/**"); // Применяем ко всем URL
-        registry.addInterceptor(userInterceptor).addPathPatterns("/cart/**", "/orders/**"); // Или только к корзине и заказам
+        registry.addInterceptor(userInterceptor).addPathPatterns("/**"); // Применяем ко всем URL
+        //registry.addInterceptor(userInterceptor).addPathPatterns("/cart/**", "/orders/**"); // Или только к корзине и заказам
     }
 }
