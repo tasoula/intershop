@@ -1,11 +1,9 @@
-package io.github.tasoula.intershop.model;
+package io.github.tasoula.intershop.dto;
 
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -13,29 +11,19 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-@Entity
-@Table(name = "t_products")
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Setter
-public class Product {
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+public class ProductCatalogItemDto {
     private UUID id;
-
-    @Column(nullable = false)
     private String title;
-
-    @Column(columnDefinition = "TEXT")
     private String description;
-
-    @Column(name = "image_path", unique = true)
     private String imgPath;
-
-    @Column(nullable = false)
     private BigDecimal price;
-
-    @Column(name = "stock_quantity", nullable = false)
     private int stockQuantity;
+    private int cartQuantity;
+    public List<String> getTextParts() {
+        return Arrays.stream(description.split("\\r?\\n")).collect(Collectors.toList());
+    }
 }
