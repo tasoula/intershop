@@ -4,6 +4,20 @@
     <meta charset="UTF-8"/>
     <title>Витрина товаров</title>
     <link rel="stylesheet" type="text/css" th:href="@{/css/styles.css}">
+    <style>
+        #cookie-banner {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: #f0f0f0;
+            padding: 10px;
+            text-align: center;
+            display: none; /* Скрываем изначально */
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script th:src="@{/js/cart.js}"></script>
 </head>
 
 <body>
@@ -49,21 +63,42 @@
     </div>
 
     <div class="items-grid">
-        <div class="item-card" th:each="item : ${items}">
+        <div class="item-card" th:each="item : ${items}" th:data-item-id="${item.getId()}">
             <a th:href="${'/catalog/items/'+item.getId()}">
                 <img height = "300" th:src="@{/catalog/images/{id}(id = ${item.getId()})}"/>
             </a>
-
             <div class="item-title" th:text="${item.getTitle()}"></div>
             <div class="item-price" th:text="${item.getPrice() + ' руб.'}"></div>
-            <form class="cart-form" th:action="${'/main/items/'+item.getId()}" method="post">
-                <button name="action" value="minus">-</button>
-                <span th:text="${item.getCount()}"></span>
-                <button name="action" value="plus">+</button>
-                <button name="action" value="plus" th:if="${item.getCount()==0}" style="float:right;">В корзину</button>
+            <form class="cart-form">
+                <button type="button" name="action" value="minus">-</button>
+                <span th:text="${item.getCartQuantity()}"></span>
+                <button type="button" name="action" value="plus">+</button>
+                <button type="button" class="add-to-cart" name="action" value="plus">В корзину</button>
             </form>
         </div>
     </div>
+    <div id="cookie-banner">
+        Мы используем Cookie для идентификации пользователей и обеспечения работы корзины.  Используя этот сайт, вы соглашаетесь с использованием Cookie.
+        <button id="accept-cookies">OK</button>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const cookieBanner = document.getElementById("cookie-banner");
+            const acceptButton = document.getElementById("accept-cookies");
+
+            // Проверяем, показывали ли баннер раньше
+            if (!localStorage.getItem("cookieAccepted")) {
+                cookieBanner.style.display = "block"; // Показываем баннер
+            }
+
+            acceptButton.addEventListener("click", function() {
+                cookieBanner.style.display = "none"; // Скрываем баннер
+                localStorage.setItem("cookieAccepted", "true"); // Сохраняем информацию
+            });
+        });
+    </script>
+
 </div>
 </body>
 </html>
