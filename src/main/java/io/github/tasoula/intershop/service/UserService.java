@@ -27,8 +27,8 @@ public class UserService {
         return savedUser.getId();
     }
 
-    //@Scheduled(cron = "0 0 * * * *") // Каждый час
-    @Scheduled(fixedDelay = 30000) // Каждые 30 секунд (для тестирования)
+    @Scheduled(cron = "0 0 * * * *") // Каждый час
+    //@Scheduled(fixedDelay = 30000) // Каждые 30 секунд (для тестирования)
     @Transactional
     public void deleteExpiredUsers() {
         long expirationTime = System.currentTimeMillis() - (coockieMaxAge * 1000L);

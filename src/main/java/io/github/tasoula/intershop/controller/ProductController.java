@@ -1,19 +1,14 @@
 package io.github.tasoula.intershop.controller;
 
-import io.github.tasoula.intershop.model.Product;
+import io.github.tasoula.intershop.dto.ProductCatalogItemDto;
+import io.github.tasoula.intershop.interceptor.UserInterceptor;
 import io.github.tasoula.intershop.service.ProductService;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Controller;
-import org.springframework.stereotype.Service;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
+import jakarta.servlet.http.HttpServletRequest;
 
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Random;
 import java.util.UUID;
 
 @Controller
@@ -22,6 +17,7 @@ public class ProductController {
 
     public static final String TITLE = "title";
     public static final String PRICE = "price";
+
     private final ProductService service;
 
     public ProductController(ProductService service) {
@@ -34,7 +30,8 @@ public class ProductController {
     }
 
     @GetMapping("items")
-    public String showItems(@RequestParam(name = "search", required = false) String search,
+    public String showItems(HttpServletRequest request,
+                            @RequestParam(name = "search", required = false) String search,
                             @RequestParam(name = "sort", required = false, defaultValue = "NO") String sort,
                             @RequestParam(name = "pageSize", required = false, defaultValue = "10") Integer pageSize,
                             @RequestParam(name = "pageNumber", required = false, defaultValue = "0") Integer pageNumber,
@@ -67,17 +64,20 @@ public class ProductController {
         Page<Product> productPage = new PageImpl<>(productItems, pageable, productItems.size());
     */
 
-        Page<Product> productPage = service.findAll(search, pageable);
+        String userIdStr = (String) request.getAttribute(UserInterceptor.USER_ID_COOKIE_NAME);
+        UUID userId = (userIdStr==null || userIdStr.isEmpty()) ? null: UUID.fromString(userIdStr);
+
+        Page<ProductCatalogItemDto> productPage = service.findAll(userId, search, pageable);
         model.addAttribute("paging", productPage);
         model.addAttribute("items", productPage.getContent());
-
 
         return "catalog.html";
     }
 
     @GetMapping("items/{id}")
-    public String showItemById(@PathVariable("id") UUID id, Model model){
-        model.addAttribute("item", service.findById(id));
+    public String showItemById(HttpServletRequest request, @PathVariable("id") UUID id, Model model){
+        UUID userId = UUID.fromString((String) request.getAttribute(UserInterceptor.USER_ID_COOKIE_NAME));
+        model.addAttribute("item", service.findByUserId(userId, id));
         return "item.html";
     }
 }
