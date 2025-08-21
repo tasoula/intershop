@@ -2,10 +2,11 @@ $(document).ready(function() {
     $('.cart-form button').click(function(event) {
         event.preventDefault();
 
-        var itemId = $(this).closest('.item-card').data('item-id'); // Получаем item-id из атрибута data
-        var action = $(this).val();
-        var $quantitySpan = $(this).siblings('span');
-        var $addToCartButton = $(this).siblings('.add-to-cart'); // Кнопка "В корзину"
+        var $button = $(this); // Сохраняем ссылку на кнопку
+        var itemId = $button.closest('.item-card').data('item-id'); // Получаем item-id из атрибута data
+        var action = $button.attr('value');
+        var $quantitySpan = $button.siblings('span');
+        var $addToCartButton = $button.siblings('.add-to-cart'); // Кнопка "В корзину"
 
         $.ajax({
             url: '/cart/items/' + itemId + '?action=' + action,
@@ -14,7 +15,24 @@ $(document).ready(function() {
                 // Обновляем количество на странице
                 $quantitySpan.text(newQuantity);
 
-                // Показываем или скрываем кнопку "В корзину" в зависимости от нового количества
+                // Если количество стало равно нулю и действие было удалением, можно удалить элемент из корзины
+                if (newQuantity <= 0 && action === 'delete') {
+                     $button.closest('tr').remove();
+                }
+                // Обновляем итоговую сумму (необходимо запросить у сервера)
+                $.get('/cart/total', function(total) {
+                     $('#total-price').text('Итого: ' + total + ' руб.');
+                });
+
+                // Проверяем, пуста ли корзина и скрываем/показываем кнопку "Купить"
+                $.get('/cart/is_empty', function(isEmpty) {
+                     if (isEmpty) {
+                          $('form[action="/buy"]').hide();
+                     } else {
+                          $('form[action="/buy"]').show();
+                     }
+                });
+
                 if (newQuantity > 0) {
                     $addToCartButton.hide(); // Скрываем кнопку "В корзину"
                 } else {

@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -38,15 +39,15 @@ public class ProductService {
         return new PageImpl<>(productCatalogItemDtos, pageable, productPage.getTotalElements());
     }
 
-    public ProductCatalogItemDto findById(UUID userId, UUID productId) {
+    public ProductCatalogItemDto findByUserId(UUID userId, UUID productId) {
         Product product = productRepository.findById(productId).get();
         //todo: обработка product == null
 
         return map(userId, product);
     }
 
-    public List<ProductCatalogItemDto> findById(UUID userId) {
-        List<CartItem> items = cartItemRepository.findByUserId(userId);
+    public List<ProductCatalogItemDto> findByUserId(UUID userId) {
+        List<CartItem> items = cartItemRepository.findByUserIdOrderByCreatedAtDesc(userId);
 
         return items.stream()
                 .map(item -> map(item.getProduct(), item.getQuantity()))
@@ -84,7 +85,7 @@ public class ProductService {
         Product product = productRepository.findById(productId).get();
 
         CartItem cartItem = cartItemRepository.findByUserIdAndProductId(userId, productId)
-                .orElseGet(() -> new CartItem(null, new User(userId, null), product, 0));
+                .orElseGet(() -> new CartItem(new User(userId, null), product));
 
         int newQuantity = cartItem.getQuantity() + changeQuantity;
 
@@ -99,5 +100,19 @@ public class ProductService {
         }
 
         return cartItem.getQuantity();
+    }
+
+    @Transactional
+    public void deleteCartItem(UUID userId, UUID productId) {
+        cartItemRepository.deleteByUserIdAndProductId(userId, productId);
+    }
+
+
+    public BigDecimal calculateTotalPriceByUserId(UUID userId) {
+        return cartItemRepository.calculateTotalPriceByUserId(userId);
+    }
+
+    public boolean isEmpty(UUID userId) {
+        return cartItemRepository.existsByUserId(userId);
     }
 }

@@ -3,59 +3,60 @@
 <meta charset="UTF-8"/>
 <head>
     <title>Корзина товаров</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script th:src="@{/js/cart.js}"></script>
 </head>
 
 <body>
 <a href="/orders" style="float:right;">
     <b>ЗАКАЗЫ &cudarrr;</b>
 </a>
-<a href="/main/items" style="float:right;">
+<a href="/catalog/items" style="float:right;">
     <b>ГЛАВНАЯ &cudarrr;</b>
 </a>
 <table style="width:70%;margin-left:auto;margin-right:auto;">
     <tr th:each="item : ${items}">
         <td>
-            <table>
-                <tr>
-                    <td>
-                        <img height = "300" th:src="@{/catalog/images/{id}(id = ${item.getId()})}"/>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <b th:text="${item.getTitle()}"></b>
-                    </td>
-                    <td>
-                        <b th:text="${item.getPrice()}+' руб.'"></b>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <form th:action="${'/cart/items/'+item.getId()}" method="post">
-                            <button name="action" value="minus">-</button>
-                            <span th:text="${item.getCartQuantity()}"></span>
-                            <button name="action" value="plus">+</button>
-                            <button name="action" value="delete" style="float:right;">&cross;</button>
-                        </form>
-                    </td>
-                </tr>
-            </table>
+            <div class="item-card" th:data-item-id="${item.getId()}">
+                <table>
+                    <tr>
+                        <td style="width: 100px; vertical-align: top;">
+                            <img height="300" th:src="@{/catalog/images/{id}(id = ${item.getId()})}" />
+                        </td>
+                        <td style="width: 300px; padding-left: 20px; display: flex; flex-direction: column; justify-content: space-between;">
+                            <div><b th:text="${item.getTitle()}"></b></div>
+                            <form class="cart-form" style="padding-top: 20px;">
+                                <button type="button" name="action" value="delete">&cross;</button>
+                            </form>
+                        </td>
+                        <td style="padding-left: 20px; vertical-align: top;">
+                            <b th:text="${item.getPrice()} + ' руб.'"></b>
+                        </td>
+                        <td style="vertical-align: top;">
+                            <form class="cart-form" style="padding-left: 20px;">
+                                <button type="button" name="action" value="minus">-</button>
+                                <span th:text="${item.getCartQuantity()}"></span>
+                                <button type="button" name="action" value="plus">+</button>
+                            </form>
+                        </td>
+                    </tr>
+                </table>
+            </div>
         </td>
     </tr>
     <tr>
         <td style="text-align:right">
-            <b th:text="'Итого: '+${total}+' руб.'"></b>
+            <b id="total-price"  th:text="'Итого: '+${total}+' руб.'"></b>
         </td>
     </tr>
+
     <tr>
-     <!--   <td style="text-align:right">
-            <form action="/buy" method="post" th:if="${!empty}">
-                <button>Купить</button>
-            </form>
-        </td>
-        -->
+          <td style="text-align:right">
+              <form action="/buy" method="post" th:if="${!empty}">
+                  <button>Купить</button>
+              </form>
+          </td>
     </tr>
 </table>
 </body>
-
 </html>

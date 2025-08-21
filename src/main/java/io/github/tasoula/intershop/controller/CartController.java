@@ -9,6 +9,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,17 +28,40 @@ public class CartController {
     @GetMapping("/items")
     public String viewCart(HttpServletRequest request, Model model) {
         UUID userId = UUID.fromString((String) request.getAttribute(UserInterceptor.USER_ID_COOKIE_NAME));
-        List<ProductCatalogItemDto> items = service.findById(userId);
+        List<ProductCatalogItemDto> items = service.findByUserId(userId);
         model.addAttribute("items", items);
+        model.addAttribute("total", service.calculateTotalPriceByUserId(userId));
+        model.addAttribute("empty", items.isEmpty());
         return "cart.html";
     }
 
     @PostMapping("items/{id}")
     public ResponseEntity<Integer> changeCartQuantity(HttpServletRequest request,
                                                       @PathVariable("id") UUID id,
-                                                      @RequestParam("action") String action) {
+                                                      @RequestParam("action") String action,
+                                                      Model model) {
         UUID userId = UUID.fromString((String) request.getAttribute(UserInterceptor.USER_ID_COOKIE_NAME));
-        int newQuantity = service.changeCartQuantity(userId, id, action.equals("plus") ? 1 : -1); // Get the new quantity from the service
+
+        int newQuantity = 0;
+        if(action.equals("delete")){
+            service.deleteCartItem(userId, id);
+        }
+        else {
+            newQuantity = service.changeCartQuantity(userId, id, action.equals("plus") ? 1 : -1); // Get the new quantity from the service
+        }
+
         return ResponseEntity.ok(newQuantity); // Return the updated quantity
+    }
+
+    @GetMapping("total")
+    private ResponseEntity<BigDecimal> getTotal(HttpServletRequest request){
+        UUID userId = UUID.fromString((String) request.getAttribute(UserInterceptor.USER_ID_COOKIE_NAME));
+        return ResponseEntity.ok(service.calculateTotalPriceByUserId(userId));
+    }
+
+    @GetMapping("is_empty")
+    private ResponseEntity<Boolean> isEmpty(HttpServletRequest request){
+        UUID userId = UUID.fromString((String) request.getAttribute(UserInterceptor.USER_ID_COOKIE_NAME));
+        return ResponseEntity.ok(!service.isEmpty(userId));
     }
 }

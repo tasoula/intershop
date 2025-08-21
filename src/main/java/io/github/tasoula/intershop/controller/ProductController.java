@@ -3,16 +3,12 @@ package io.github.tasoula.intershop.controller;
 import io.github.tasoula.intershop.dto.ProductCatalogItemDto;
 import io.github.tasoula.intershop.interceptor.UserInterceptor;
 import io.github.tasoula.intershop.service.ProductService;
-import jakarta.servlet.http.Cookie;
 import org.springframework.data.domain.*;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletRequest;
 
-import java.util.Arrays;
-import java.util.Optional;
 import java.util.UUID;
 
 @Controller
@@ -81,7 +77,7 @@ public class ProductController {
     @GetMapping("items/{id}")
     public String showItemById(HttpServletRequest request, @PathVariable("id") UUID id, Model model){
         UUID userId = UUID.fromString((String) request.getAttribute(UserInterceptor.USER_ID_COOKIE_NAME));
-        model.addAttribute("item", service.findById(userId, id));
+        model.addAttribute("item", service.findByUserId(userId, id));
         return "item.html";
     }
 }
