@@ -1,6 +1,6 @@
 package io.github.tasoula.intershop.controller;
 
-import io.github.tasoula.intershop.dto.ProductCatalogItemDto;
+import io.github.tasoula.intershop.dto.ProductDto;
 import io.github.tasoula.intershop.interceptor.UserInterceptor;
 import io.github.tasoula.intershop.service.ProductService;
 import org.springframework.data.domain.*;
@@ -67,7 +67,7 @@ public class ProductController {
         String userIdStr = (String) request.getAttribute(UserInterceptor.USER_ID_COOKIE_NAME);
         UUID userId = (userIdStr==null || userIdStr.isEmpty()) ? null: UUID.fromString(userIdStr);
 
-        Page<ProductCatalogItemDto> productPage = service.findAll(userId, search, pageable);
+        Page<ProductDto> productPage = service.findAll(userId, search, pageable);
         model.addAttribute("paging", productPage);
         model.addAttribute("items", productPage.getContent());
 

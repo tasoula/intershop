@@ -15,14 +15,13 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @Getter
 @Setter
-public class ProductCatalogItemDto {
+public class ProductDto {
     private UUID id;
     private String title;
     private String description;
-    private String imgPath;
     private BigDecimal price;
     private int stockQuantity;
-    private int cartQuantity;
+    private int quantity;
     public List<String> getTextParts() {
         return Arrays.stream(description.split("\\r?\\n")).collect(Collectors.toList());
     }

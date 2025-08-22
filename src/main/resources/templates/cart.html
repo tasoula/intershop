@@ -31,7 +31,7 @@
                     <tr>
                         <td style="width: 100px; vertical-align: top;">
                             <img height="300" th:src="@{/catalog/images/{id}(id = ${item.getId()})}"
-                                 th:classappend="${item.getStockQuantity() < item.getCartQuantity() ? 'out-of-stock' : ''}"/>
+                                 th:classappend="${item.getStockQuantity() < item.getQuantity() ? 'out-of-stock' : ''}"/>
                         </td>
                         <td style="width: 300px; padding-left: 20px; display: flex; flex-direction: column; justify-content: space-between;">
                             <div><b th:text="${item.getTitle()}"></b></div>
@@ -45,9 +45,9 @@
                         <td style="vertical-align: top;">
                             <form class="cart-form" style="padding-left: 20px;">
                                 <button type="button" class="minus quantity-button" name="action" value="minus" th:disabled="${item.getStockQuantity() <= 0}">-</button>
-                                <span class="cart-quantity" th:text="${item.getCartQuantity()}"></span>
-                                <button type="button" class="plus quantity-button" name="action" value="plus" th:disabled="${item.getStockQuantity() <= item.getCartQuantity()}">+</button>
-                                <div class="stock-remaining" th:if="${item.getStockQuantity() < item.getCartQuantity()}">
+                                <span class="cart-quantity" th:text="${item.getQuantity()}"></span>
+                                <button type="button" class="plus quantity-button" name="action" value="plus" th:disabled="${item.getStockQuantity() <= item.getQuantity()}">+</button>
+                                <div class="stock-remaining" th:if="${item.getStockQuantity() < item.getQuantity()}">
                                     Осталось <span class="stock-quantity" th:text="${item.getStockQuantity()}"></span> шт.
                                 </div>
                             </form>
@@ -67,7 +67,7 @@
 
                 <tr>
                     <td style="text-align:right">
-                        <form action="/buy" method="post" th:if="${!#lists.isEmpty(items)}">
+                        <form th:action="@{/cart/buy}" method="post" th:if="${!#lists.isEmpty(items)}" id="buy-form">
                             <button>Купить</button>
                         </form>
                     </td>

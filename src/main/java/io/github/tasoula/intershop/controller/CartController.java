@@ -1,6 +1,6 @@
 package io.github.tasoula.intershop.controller;
 
-import io.github.tasoula.intershop.dto.ProductCatalogItemDto;
+import io.github.tasoula.intershop.dto.ProductDto;
 import io.github.tasoula.intershop.interceptor.UserInterceptor;
 import io.github.tasoula.intershop.service.ProductService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Controller
@@ -28,7 +29,7 @@ public class CartController {
     @GetMapping("/items")
     public String viewCart(HttpServletRequest request, Model model) {
         UUID userId = UUID.fromString((String) request.getAttribute(UserInterceptor.USER_ID_COOKIE_NAME));
-        List<ProductCatalogItemDto> items = service.findByUserId(userId);
+        List<ProductDto> items = service.findByUserId(userId);
         model.addAttribute("items", items);
         model.addAttribute("total", service.calculateTotalPriceByUserId(userId));
         model.addAttribute("empty", items.isEmpty());
@@ -62,6 +63,13 @@ public class CartController {
     @GetMapping("is_empty")
     private ResponseEntity<Boolean> isEmpty(HttpServletRequest request){
         UUID userId = UUID.fromString((String) request.getAttribute(UserInterceptor.USER_ID_COOKIE_NAME));
-        return ResponseEntity.ok(!service.isEmpty(userId));
+        return ResponseEntity.ok(service.isEmpty(userId));
+    }
+
+    @PostMapping("buy")
+    public String buy(HttpServletRequest request, Model model) {
+        UUID userId = UUID.fromString((String) request.getAttribute(UserInterceptor.USER_ID_COOKIE_NAME));
+        Optional<UUID> orderId = service.createOrder(userId);
+        return orderId.map(uuid -> "redirect:/orders/" + uuid + "?newOrder=true").orElse("redirect:/cart/items");
     }
 }
