@@ -77,7 +77,7 @@ public class ProductController {
     @GetMapping("items/{id}")
     public String showItemById(HttpServletRequest request, @PathVariable("id") UUID id, Model model){
         UUID userId = UUID.fromString((String) request.getAttribute(UserInterceptor.USER_ID_COOKIE_NAME));
-        model.addAttribute("item", service.findByUserId(userId, id));
+        model.addAttribute("item", service.findById(userId, id));
         return "item.html";
     }
 }

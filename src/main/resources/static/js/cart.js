@@ -57,11 +57,10 @@ $(document).ready(function() {
 
                 // Проверяем, пуста ли корзина и скрываем/показываем кнопку "Купить"
                 $.get('/cart/is_empty', function(isEmpty) {
-                     console.log('isEmpty' + isEmpty);
                      if (isEmpty) {
-                           $('#buy-form').hide();
+                           $('#new-order-form').hide();
                      } else {
-                           $('#buy-form').show();
+                           $('#new-order-form').show();
                      }
                 });
             },

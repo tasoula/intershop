@@ -55,8 +55,6 @@
                     </tr>
                 </table>
             </div>
-
-
         </td>
     </tr>
     <tr>
@@ -67,7 +65,7 @@
 
                 <tr>
                     <td style="text-align:right">
-                        <form th:action="@{/cart/buy}" method="post" th:if="${!#lists.isEmpty(items)}" id="buy-form">
+                        <form th:action="@{/orders/new}" method="post" th:if="${!#lists.isEmpty(items)}" id="new-order-form">
                             <button>Купить</button>
                         </form>
                     </td>

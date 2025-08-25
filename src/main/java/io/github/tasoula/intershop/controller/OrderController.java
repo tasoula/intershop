@@ -1,20 +1,21 @@
 package io.github.tasoula.intershop.controller;
 
 import io.github.tasoula.intershop.interceptor.UserInterceptor;
-import io.github.tasoula.intershop.service.ProductService;
+import io.github.tasoula.intershop.service.OrderService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Controller
 @RequestMapping("/orders")
 public class OrderController {
-    private final ProductService service;
+    private final OrderService service;
 
-    public OrderController(ProductService service) {
+    public OrderController(OrderService service) {
         this.service = service;
     }
 
@@ -33,5 +34,12 @@ public class OrderController {
         model.addAttribute("order", service.getById(id).get());
         model.addAttribute("newOrder", isNew);
         return "order.html";
+    }
+
+    @PostMapping("new")
+    public String createOrder(HttpServletRequest request, Model model) {
+        UUID userId = UUID.fromString((String) request.getAttribute(UserInterceptor.USER_ID_COOKIE_NAME));
+        Optional<UUID> orderId = service.createOrder(userId);
+        return orderId.map(uuid -> "redirect:/orders/" + uuid + "?newOrder=true").orElse("redirect:/cart/items");
     }
 }
