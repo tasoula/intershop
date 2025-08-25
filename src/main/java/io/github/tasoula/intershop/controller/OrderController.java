@@ -32,7 +32,7 @@ public class OrderController {
     public String showOrder(@PathVariable("id") UUID id,
                             @RequestParam(name = "newOrder", required = false, defaultValue = "false") boolean isNew,
                             Model model) {
-        model.addAttribute("order", service.getById(id).orElseThrow(() -> new ResourceNotFoundException("Заказ " + id + "не найден")));
+        model.addAttribute("order", service.getById(id).orElseThrow(() -> new ResourceNotFoundException("Заказ " + id + " не найден")));
         model.addAttribute("newOrder", isNew);
         return "order.html";
     }
