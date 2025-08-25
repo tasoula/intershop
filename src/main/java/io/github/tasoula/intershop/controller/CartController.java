@@ -1,7 +1,7 @@
 package io.github.tasoula.intershop.controller;
 
 import io.github.tasoula.intershop.dto.ProductDto;
-import io.github.tasoula.intershop.interceptor.UserInterceptor;
+import io.github.tasoula.intershop.interceptor.CookieConstants;
 import io.github.tasoula.intershop.service.CartService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +17,6 @@ import java.util.UUID;
 @RequestMapping("/cart")
 public class CartController {
 
-    //todo как-то разделить продукты и cart_item здесь и в сервисах
     private final CartService service;
 
     public CartController(CartService service) {
@@ -27,7 +26,7 @@ public class CartController {
 
     @GetMapping("/items")
     public String viewCart(HttpServletRequest request, Model model) {
-        UUID userId = UUID.fromString((String) request.getAttribute(UserInterceptor.USER_ID_COOKIE_NAME));
+        UUID userId = UUID.fromString((String) request.getAttribute(CookieConstants.USER_ID_COOKIE_NAME));
         List<ProductDto> items = service.findByUserId(userId);
         model.addAttribute("items", items);
         model.addAttribute("total", service.calculateTotalPriceByUserId(userId));
@@ -37,13 +36,13 @@ public class CartController {
 
     @GetMapping("total")
     private ResponseEntity<BigDecimal> getTotal(HttpServletRequest request){
-        UUID userId = UUID.fromString((String) request.getAttribute(UserInterceptor.USER_ID_COOKIE_NAME));
+        UUID userId = UUID.fromString((String) request.getAttribute(CookieConstants.USER_ID_COOKIE_NAME));
         return ResponseEntity.ok(service.calculateTotalPriceByUserId(userId));
     }
 
     @GetMapping("is_empty")
     private ResponseEntity<Boolean> isEmpty(HttpServletRequest request){
-        UUID userId = UUID.fromString((String) request.getAttribute(UserInterceptor.USER_ID_COOKIE_NAME));
+        UUID userId = UUID.fromString((String) request.getAttribute(CookieConstants.USER_ID_COOKIE_NAME));
         return ResponseEntity.ok(service.isEmpty(userId));
     }
 
@@ -51,7 +50,7 @@ public class CartController {
     public ResponseEntity<Integer> changeProductQuantityInCart(HttpServletRequest request,
                                                                @PathVariable("id") UUID productId,
                                                                @RequestParam("action") String action) {
-        UUID userId = UUID.fromString((String) request.getAttribute(UserInterceptor.USER_ID_COOKIE_NAME));
+        UUID userId = UUID.fromString((String) request.getAttribute(CookieConstants.USER_ID_COOKIE_NAME));
 
         int newQuantity = 0;
         if(action.equals("delete")){
@@ -63,5 +62,4 @@ public class CartController {
 
         return ResponseEntity.ok(newQuantity);
     }
-
 }

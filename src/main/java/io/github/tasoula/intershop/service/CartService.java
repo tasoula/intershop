@@ -3,6 +3,7 @@ package io.github.tasoula.intershop.service;
 import io.github.tasoula.intershop.dao.CartItemRepository;
 import io.github.tasoula.intershop.dao.ProductRepository;
 import io.github.tasoula.intershop.dto.ProductDto;
+import io.github.tasoula.intershop.exceptions.ResourceNotFoundException;
 import io.github.tasoula.intershop.model.CartItem;
 import io.github.tasoula.intershop.model.Product;
 import io.github.tasoula.intershop.model.User;
@@ -19,24 +20,27 @@ public class CartService {
     private final CartItemRepository cartItemRepository;
     private final ProductRepository productRepository;
 
-
     public CartService(CartItemRepository cartItemRepository, ProductRepository productRepository) {
         this.cartItemRepository = cartItemRepository;
         this.productRepository = productRepository;
     }
 
     public List<ProductDto> findByUserId(UUID userId) {
-        List<CartItem> items = cartItemRepository.findByUserIdOrderByCreatedAtDesc(userId);
-
-        return items.stream()
-                .map(item -> new ProductDto(item.getProduct(), item.getQuantity()))
+        return cartItemRepository.findByUserIdOrderByCreatedAtDesc(userId)
+                .stream()
+                .map(this::convertToProductDto)
                 .collect(Collectors.toList());
+    }
+
+    private ProductDto convertToProductDto(CartItem item) {
+        return new ProductDto(item.getProduct(), item.getQuantity());
     }
 
     @Transactional
     public int changeProductQuantityInCart(UUID userId, UUID productId, int changeQuantity) {
-        //todo обработка productId = null
-        Product product = productRepository.findById(productId).get();
+
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() ->  new ResourceNotFoundException("Product with id " + productId + " not found."));
 
         CartItem cartItem = cartItemRepository.findByUserIdAndProductId(userId, productId)
                 .orElseGet(() -> new CartItem(new User(userId), product));
@@ -48,7 +52,7 @@ public class CartService {
             return 0;
         }
 
-        if (newQuantity > product.getStockQuantity()) newQuantity = product.getStockQuantity();
+        newQuantity = Math.min(newQuantity, product.getStockQuantity());
 
         cartItem.setQuantity(newQuantity);
         cartItemRepository.save(cartItem);
@@ -63,11 +67,10 @@ public class CartService {
 
     public BigDecimal calculateTotalPriceByUserId(UUID userId) {
         BigDecimal result = cartItemRepository.calculateTotalPriceByUserId(userId);
-        return (result != null) ? result : BigDecimal.valueOf(0);
+        return (result != null) ? result : BigDecimal.ZERO;
     }
 
     public boolean isEmpty(UUID userId) {
         return !cartItemRepository.existsByUserId(userId);
     }
-
 }

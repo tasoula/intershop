@@ -14,7 +14,6 @@ import java.util.UUID;
 @Component
 public class UserInterceptor implements HandlerInterceptor {
 
-    public static final String USER_ID_COOKIE_NAME = "userId"; // todo может вынести это в отдельное перечисление?
     @Value("${cookie.max.age.seconds}")
     private int coockieMaxAge;
 
@@ -27,14 +26,14 @@ public class UserInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         Optional<Cookie> userIdCookie = Arrays.stream(request.getCookies() == null ? new Cookie[0] : request.getCookies())
-                .filter(cookie -> USER_ID_COOKIE_NAME.equals(cookie.getName()))
+                .filter(cookie -> CookieConstants.USER_ID_COOKIE_NAME.equals(cookie.getName()))
                 .findFirst();
 
         String userId = userIdCookie.map(Cookie::getValue).orElse(null);
 
         if (userId == null) {
             userId = service.createUser().toString();
-            Cookie cookie = new Cookie(USER_ID_COOKIE_NAME, userId);
+            Cookie cookie = new Cookie(CookieConstants.USER_ID_COOKIE_NAME, userId);
             cookie.setMaxAge(coockieMaxAge);
             cookie.setPath("/");
 
@@ -58,7 +57,7 @@ public class UserInterceptor implements HandlerInterceptor {
         }
 
         // Добавляем ID пользователя в атрибуты запроса, чтобы он был доступен в контроллерах
-        request.setAttribute(USER_ID_COOKIE_NAME, userId);
+        request.setAttribute(CookieConstants.USER_ID_COOKIE_NAME, userId);
 
         return true; // Продолжаем обработку запроса
     }

@@ -1,7 +1,8 @@
 package io.github.tasoula.intershop.controller;
 
 import io.github.tasoula.intershop.dto.ProductDto;
-import io.github.tasoula.intershop.interceptor.UserInterceptor;
+import io.github.tasoula.intershop.exceptions.ResourceNotFoundException;
+import io.github.tasoula.intershop.interceptor.CookieConstants;
 import io.github.tasoula.intershop.service.ProductService;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Controller;
@@ -64,7 +65,7 @@ public class ProductController {
         Page<Product> productPage = new PageImpl<>(productItems, pageable, productItems.size());
     */
 
-        String userIdStr = (String) request.getAttribute(UserInterceptor.USER_ID_COOKIE_NAME);
+        String userIdStr = (String) request.getAttribute(CookieConstants.USER_ID_COOKIE_NAME);
         UUID userId = (userIdStr==null || userIdStr.isEmpty()) ? null: UUID.fromString(userIdStr);
 
         Page<ProductDto> productPage = service.findAll(userId, search, pageable);
@@ -76,7 +77,7 @@ public class ProductController {
 
     @GetMapping("items/{id}")
     public String showItemById(HttpServletRequest request, @PathVariable("id") UUID id, Model model){
-        UUID userId = UUID.fromString((String) request.getAttribute(UserInterceptor.USER_ID_COOKIE_NAME));
+        UUID userId = UUID.fromString((String) request.getAttribute(CookieConstants.USER_ID_COOKIE_NAME));
         model.addAttribute("item", service.findById(userId, id));
         return "item.html";
     }

@@ -3,6 +3,7 @@ package io.github.tasoula.intershop.service;
 import io.github.tasoula.intershop.dao.CartItemRepository;
 import io.github.tasoula.intershop.dao.ProductRepository;
 import io.github.tasoula.intershop.dto.ProductDto;
+import io.github.tasoula.intershop.exceptions.ResourceNotFoundException;
 import io.github.tasoula.intershop.model.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -21,7 +22,6 @@ public class ProductService {
 
     public ProductService(ProductRepository repository, CartItemRepository cartItemRepository) {
         this.productRepository = repository;
-
         this.cartItemRepository = cartItemRepository;
     }
 
@@ -31,26 +31,28 @@ public class ProductService {
                 : productRepository.findByTitleContainingOrDescriptionContainingIgnoreCaseAndStockQuantityGreaterThan(search.toLowerCase(), search.toLowerCase(), 0, pageable);
 
         List<ProductDto> productCatalogItemDtos = productPage.getContent().stream()
-                .map(product -> map(userId, product))
+                .map(product -> mapToDto(userId, product))
                 .collect(Collectors.toList());
 
         return new PageImpl<>(productCatalogItemDtos, pageable, productPage.getTotalElements());
     }
 
-    public ProductDto findById(UUID userId, UUID productId) {
-        Product product = productRepository.findById(productId).get();
-        //todo: обработка product == null
-
-        return map(userId, product);
+    public ProductDto findById(UUID userId, UUID productId) throws ResourceNotFoundException {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + productId));
+        return mapToDto(userId, product);
     }
 
-    public ProductDto map(UUID userId, Product product){
-        int cartQuantity = 0;
-        if(userId != null) {
-            cartQuantity = cartItemRepository.findByUserIdAndProductId(userId, product.getId())
-                    .map(CartItem::getQuantity)
-                    .orElse(0); // Если нет записи в корзине, то 0
+    private ProductDto mapToDto(UUID userId, Product product) {
+        return new ProductDto(product, getCartQuantity(userId, product.getId()));
+    }
+
+    private int getCartQuantity(UUID userId, UUID productId) {
+        if (userId == null) {
+            return 0;
         }
-        return new ProductDto(product, cartQuantity);
+        return cartItemRepository.findByUserIdAndProductId(userId, productId)
+                .map(CartItem::getQuantity)
+                .orElse(0); // Если нет записи в корзине, то 0
     }
 }

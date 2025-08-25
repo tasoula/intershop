@@ -24,18 +24,22 @@ public class OrderService {
         this.orderRepository = orderRepository;
     }
 
-
     @Transactional
     public Optional<UUID> createOrder(UUID userId) {
-        List<CartItem> items = cartItemRepository.findByUserId(userId);
+        List<CartItem> cartItems = cartItemRepository.findByUserId(userId);
 
-        if (items.stream().anyMatch(c -> c.getProduct().getStockQuantity() < c.getQuantity()))
+        // Если корзина пуста, не создаем заказ
+        if (cartItems.isEmpty()) {
+            return Optional.empty();
+        }
+        // Проверяем, достаточно ли товаров на складе.
+        if (cartItems.stream().anyMatch(c -> c.getProduct().getStockQuantity() < c.getQuantity()))
             return Optional.empty();
 
         Order order = new Order();
         order.setUser(new User(userId));
 
-        List<OrderItem> orderItems = items.stream()
+        List<OrderItem> orderItems = cartItems.stream()
                 .map(cartItem -> {
                     OrderItem orderItem = new OrderItem();
                     orderItem.setOrder(order);
@@ -49,7 +53,7 @@ public class OrderService {
         order.setOrderItems(orderItems);
 
         BigDecimal totalAmount = orderItems.stream()
-                .map(OrderItem::getPriceAtTimeOfOrder)
+                .map(item -> item.getPriceAtTimeOfOrder().multiply(BigDecimal.valueOf(item.getQuantity())))
                 .reduce(BigDecimal::add)
                 .orElse(BigDecimal.valueOf(0));
         order.setTotalAmount(totalAmount);
@@ -61,50 +65,41 @@ public class OrderService {
     }
 
     public Optional<OrderDto> getById(UUID id) {
-        //todo handle order == null
-        Optional<Order> orderOptional = orderRepository.findById(id);
-
-        if(orderOptional.isPresent()) {
-            Order order = orderOptional.get();
-
-            OrderDto orderDto = new OrderDto();
-            orderDto.setId(order.getId());
-
-            List<ProductDto> items = order.getOrderItems()
-                    .stream()
-                    .map(item -> {
-                        ProductDto dto = new ProductDto();
-                        dto.setId(item.getProduct().getId());
-                        dto.setTitle(item.getProduct().getTitle());
-                        dto.setQuantity(item.getQuantity());
-                        dto.setPrice(item.getPriceAtTimeOfOrder());
-                        return dto;
-                    })
-                    .toList();
-            orderDto.setItems(items);
-
-            orderDto.setTotalAmount(items.stream()
-                    .map(i ->  i.getPrice().multiply(BigDecimal.valueOf(i.getQuantity())))
-                    .reduce(BigDecimal.ZERO, BigDecimal::add));
-
-            return Optional.of(orderDto);
-        }
-        return  Optional.empty();
+        return orderRepository.findById(id)
+                .map(this::convertToDto);
     }
 
     public List<OrderDto> getByUserId(UUID userId) {
         List<Order> orders = orderRepository.findByUserId(userId);
         return orders
                 .stream()
-                .map(order -> {
-                    return new OrderDto(
-                            order.getId(),
-                            order.getOrderItems()
-                                    .stream()
-                                    .map(item -> new ProductDto(item.getProduct(), item.getQuantity()))
-                                    .toList(),
-                            order.getTotalAmount()
-                    );
-                }).toList();
+                .map(this::convertToDto)
+                .toList();
+    }
+
+    private OrderDto convertToDto(Order order) {
+        List<ProductDto> productDtos = order.getOrderItems()
+                .stream()
+                .map(item -> {
+                    ProductDto dto = new ProductDto();
+                    dto.setId(item.getProduct().getId());
+                    dto.setTitle(item.getProduct().getTitle());
+                    dto.setQuantity(item.getQuantity());
+                    dto.setPrice(item.getPriceAtTimeOfOrder());
+                    return dto;
+                })
+                .toList();
+
+        BigDecimal totalAmount = productDtos.stream()
+                .map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return new OrderDto(
+                order.getId(),
+                productDtos,
+                totalAmount
+        );
     }
 }
+
+
