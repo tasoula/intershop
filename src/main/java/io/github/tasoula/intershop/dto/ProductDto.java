@@ -1,5 +1,6 @@
 package io.github.tasoula.intershop.dto;
 
+import io.github.tasoula.intershop.model.Product;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,14 +16,22 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @Getter
 @Setter
-public class ProductCatalogItemDto {
+public class ProductDto {
     private UUID id;
     private String title;
     private String description;
-    private String imgPath;
     private BigDecimal price;
     private int stockQuantity;
-    private int cartQuantity;
+    private int quantity;
+
+    public ProductDto(Product product, int cartQuantity) {
+        this.id = product.getId();
+        this.title = product.getTitle();
+        this.description = product.getDescription();
+        this.price = product.getPrice();
+        this.stockQuantity = product.getStockQuantity();
+        this.quantity = cartQuantity;
+    }
     public List<String> getTextParts() {
         return Arrays.stream(description.split("\\r?\\n")).collect(Collectors.toList());
     }

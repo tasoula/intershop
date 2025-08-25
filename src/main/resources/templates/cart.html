@@ -5,6 +5,15 @@
     <title>Корзина товаров</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script th:src="@{/js/cart.js}"></script>
+    <style>
+        .out-of-stock {
+            opacity: 0.3;
+        }
+        .stock-remaining {
+            font-size: smaller;
+            color: gray;
+        }
+    </style>
 </head>
 
 <body>
@@ -17,11 +26,12 @@
 <table style="width:70%;margin-left:auto;margin-right:auto;">
     <tr th:each="item : ${items}">
         <td>
-            <div class="item-card" th:data-item-id="${item.getId()}">
+            <div class="item-card" th:data-item-id="${item.getId()} " th:data-stock-quantity="${item.getStockQuantity()}">
                 <table>
                     <tr>
                         <td style="width: 100px; vertical-align: top;">
-                            <img height="300" th:src="@{/catalog/images/{id}(id = ${item.getId()})}" />
+                            <img height="300" th:src="@{/catalog/images/{id}(id = ${item.getId()})}"
+                                 th:classappend="${item.getStockQuantity() < item.getQuantity() ? 'out-of-stock' : ''}"/>
                         </td>
                         <td style="width: 300px; padding-left: 20px; display: flex; flex-direction: column; justify-content: space-between;">
                             <div><b th:text="${item.getTitle()}"></b></div>
@@ -34,9 +44,12 @@
                         </td>
                         <td style="vertical-align: top;">
                             <form class="cart-form" style="padding-left: 20px;">
-                                <button type="button" name="action" value="minus">-</button>
-                                <span th:text="${item.getCartQuantity()}"></span>
-                                <button type="button" name="action" value="plus">+</button>
+                                <button type="button" class="minus quantity-button" name="action" value="minus" th:disabled="${item.getStockQuantity() <= 0}">-</button>
+                                <span class="cart-quantity" th:text="${item.getQuantity()}"></span>
+                                <button type="button" class="plus quantity-button" name="action" value="plus" th:disabled="${item.getStockQuantity() <= item.getQuantity()}">+</button>
+                                <div class="stock-remaining" th:if="${item.getStockQuantity() < item.getQuantity()}">
+                                    Осталось <span class="stock-quantity" th:text="${item.getStockQuantity()}"></span> шт.
+                                </div>
                             </form>
                         </td>
                     </tr>
@@ -45,18 +58,18 @@
         </td>
     </tr>
     <tr>
-        <td style="text-align:right">
-            <b id="total-price"  th:text="'Итого: '+${total}+' руб.'"></b>
-        </td>
-    </tr>
+         <td style="text-align:right">
+                        <b id="total-price"  th:text="'Итого: '+${total}+' руб.'"></b>
+                    </td>
+                </tr>
 
-    <tr>
-          <td style="text-align:right">
-              <form action="/buy" method="post" th:if="${!empty}">
-                  <button>Купить</button>
-              </form>
-          </td>
-    </tr>
-</table>
-</body>
-</html>
+                <tr>
+                    <td style="text-align:right">
+                        <form th:action="@{/orders/new}" method="post" th:if="${!#lists.isEmpty(items)}" id="new-order-form">
+                            <button>Купить</button>
+                        </form>
+                    </td>
+                </tr>
+            </table>
+            </body>
+            </html>

@@ -31,10 +31,9 @@ public class OrderItem {
     private Product product;
 
     @Column(nullable = false, columnDefinition = "integer default 0")
-   // @Check(constraints = "value >= 0")
     private Integer quantity;
 
-    @Column(name = "price", nullable = false)
+    @Column(name = "price_at_time_of_order", nullable = false)
     @Check(constraints = "value > 0")
     private BigDecimal priceAtTimeOfOrder;
 }

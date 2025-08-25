@@ -15,6 +15,7 @@ import java.util.UUID;
 @Repository
 public interface CartItemRepository extends JpaRepository<CartItem, UUID> {
     Optional<CartItem>  findByUserIdAndProductId(UUID userId, UUID id);
+    List<CartItem> findByUserId(UUID userId);
     List<CartItem> findByUserIdOrderByCreatedAtDesc(UUID userId);
 
     void deleteByUserIdAndProductId(UUID userId, UUID productId);
@@ -25,4 +26,6 @@ public interface CartItemRepository extends JpaRepository<CartItem, UUID> {
     BigDecimal calculateTotalPriceByUserId(@Param("userId") UUID userId);
 
     boolean existsByUserId(UUID userId);
+
+    void deleteByUserId(UUID userId);
 }
