@@ -47,7 +47,7 @@ public class ProductService {
         return new ProductDto(product, getCartQuantity(userId, product.getId()));
     }
 
-    private int getCartQuantity(UUID userId, UUID productId) {
+    public int getCartQuantity(UUID userId, UUID productId) {
         if (userId == null) {
             return 0;
         }
