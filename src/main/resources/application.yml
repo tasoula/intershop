@@ -14,3 +14,5 @@ spring:
 
 upload.images.dir: C:/Users/79185/IdeaProjects/YandexPracticum Projects/sprint-5/intershop/src/main/webapp/images
 cookie.max.age.seconds: 86400  # 1 day in seconds (60 × 60 × 24)
+
+
