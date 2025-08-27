@@ -1,5 +1,6 @@
 package io.github.tasoula.intershop.dao;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -12,7 +13,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @DataJpaTest
 @ActiveProfiles("test")
 @Testcontainers
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 public abstract class SpringBootPostgreSQLBase {
 
     private static PostgreSQLContainer<?> postgres;
