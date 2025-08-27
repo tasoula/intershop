@@ -3,8 +3,8 @@ spring:
     activate:
       on-profile: test
 
-  datasource:
-    url: ${INTERSHOP_TEST_DB_URL}
+  database:
+    name: ${INTERSHOP_TEST_DB_NAME}
     username: ${INTERSHOP_DB_USERNAME}
     password: ${INTERSHOP_DB_PASSWORD}
 

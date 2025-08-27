@@ -1,5 +1,6 @@
 package io.github.tasoula.intershop.dao;
 
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -15,14 +16,27 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 public abstract class SpringBootPostgreSQLBase {
 
+    @Value("${spring.database.name}")
+    private String databaseName;
+
+    @Value("${spring.database.username}")
+    private String username;
+
+    @Value("${spring.database.password}")
+    private String password;
+
     private static PostgreSQLContainer<?> postgres;
 
     static {
-        postgres = new PostgreSQLContainer<>("postgres:17.6")
-                .withDatabaseName("testdb")
-                .withUsername("junit")
-                .withPassword("junit");
+        postgres = new PostgreSQLContainer<>("postgres:17.6");
         postgres.start();
+    }
+
+    @PostConstruct
+    void init() {
+        postgres.withDatabaseName(databaseName)
+                .withUsername(username)
+                .withPassword(password);
     }
 
     @DynamicPropertySource
@@ -31,4 +45,8 @@ public abstract class SpringBootPostgreSQLBase {
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
     }
+
+
+
+
 } 
