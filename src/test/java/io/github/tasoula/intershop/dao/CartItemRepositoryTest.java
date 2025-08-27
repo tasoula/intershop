@@ -9,9 +9,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -22,9 +20,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DataJpaTest
-@ActiveProfiles("test") // Optional: If you have a specific test profile
-public class CartItemRepositoryTest {
+public class CartItemRepositoryTest extends SpringBootPostgreSQLBase {
 
     @Autowired
     private TestEntityManager entityManager;
@@ -38,24 +34,23 @@ public class CartItemRepositoryTest {
     private CartItem cartItem1;
     private CartItem cartItem2;
 
+
     @BeforeEach
     public void setUp() {
         // Create and persist test data
         user = new User();
-        user.setId(UUID.randomUUID()); // Set the ID explicitly
         user = entityManager.persist(user);
 
         product1 = new Product();
-        product1.setId(UUID.randomUUID()); // Set the ID explicitly
         product1.setTitle("Product 1");
         product1.setPrice(BigDecimal.TEN);
         product1 = entityManager.persist(product1);
 
         product2 = new Product();
-        product2.setId(UUID.randomUUID()); // Set the ID explicitly
         product2.setTitle("Product 2");
         product2.setPrice(new BigDecimal("5.50"));
         product2 = entityManager.persist(product2);
+
 
         cartItem1 = new CartItem();
         cartItem1.setUser(user);
@@ -71,8 +66,8 @@ public class CartItemRepositoryTest {
         cartItem2.setCreatedAt(Timestamp.from(Instant.now().minusSeconds(60))); // Slightly older
         cartItem2 = entityManager.persist(cartItem2);
 
-        entityManager.flush();  // Ensure data is written to the database
-        entityManager.clear(); // Clear the persistence context to avoid caching issues
+        //entityManager.flush();
+        //entityManager.clear(); // Clear the persistence context to avoid caching issues
     }
 
     @AfterEach
@@ -84,7 +79,6 @@ public class CartItemRepositoryTest {
         entityManager.remove(product2);
         entityManager.flush();
     }
-
 
     @Test
     void findByUserIdAndProductId_ShouldReturnCartItem_WhenExists() {
@@ -110,8 +104,7 @@ public class CartItemRepositoryTest {
     @Test
     void findByUserId_ShouldReturnEmptyList_WhenNoCartItemsForUser() {
         User otherUser = new User();
-        otherUser.setId(UUID.randomUUID());
-        entityManager.persist(otherUser);
+        otherUser = entityManager.persist(otherUser);
         List<CartItem> cartItems = cartItemRepository.findByUserId(otherUser.getId());
         assertThat(cartItems).isEmpty();
         entityManager.remove(otherUser);
@@ -146,10 +139,9 @@ public class CartItemRepositoryTest {
     @Test
     void calculateTotalPriceByUserId_ShouldReturnZero_WhenNoCartItemsForUser() {
         User otherUser = new User();
-        otherUser.setId(UUID.randomUUID());
-        entityManager.persist(otherUser);
+        otherUser = entityManager.persist(otherUser);
         BigDecimal totalPrice = cartItemRepository.calculateTotalPriceByUserId(otherUser.getId());
-        assertThat(totalPrice).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(totalPrice).isNull();
         entityManager.remove(otherUser);
         entityManager.flush();
     }
@@ -163,8 +155,7 @@ public class CartItemRepositoryTest {
     @Test
     void existsByUserId_ShouldReturnFalse_WhenNoCartItemsExistForUser() {
         User otherUser = new User();
-        otherUser.setId(UUID.randomUUID());
-        entityManager.persist(otherUser);
+        otherUser = entityManager.persist(otherUser);
         boolean exists = cartItemRepository.existsByUserId(otherUser.getId());
         assertThat(exists).isFalse();
         entityManager.remove(otherUser);

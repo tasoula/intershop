@@ -1,7 +1,6 @@
 package io.github.tasoula.intershop.service;
 
 
-import io.github.tasoula.intershop.SpringBootPostgreSQLBase;
 import io.github.tasoula.intershop.dao.CartItemRepository;
 import io.github.tasoula.intershop.dao.ProductRepository;
 import io.github.tasoula.intershop.dto.ProductDto;
@@ -14,11 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
 import java.util.List;
