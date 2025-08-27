@@ -1,0 +1,12 @@
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  datasource:
+    url: ${INTERSHOP_TEST_DB_URL}
+    username: ${INTERSHOP_DB_USERNAME}
+    password: ${INTERSHOP_DB_PASSWORD}
+
+  liquibase:
+    contexts: 'test'
