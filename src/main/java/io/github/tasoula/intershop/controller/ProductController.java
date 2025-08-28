@@ -55,7 +55,7 @@ public class ProductController {
 
         Pageable pageable = PageRequest.of(pageNumber, pageSize, sortObj.ascending());
         String userIdStr = (String) request.getAttribute(CookieConstants.USER_ID_COOKIE_NAME);
-        UUID userId = (userIdStr==null || userIdStr.isEmpty()) ? null: UUID.fromString(userIdStr);
+        UUID userId = (userIdStr == null || userIdStr.isEmpty()) ? null : UUID.fromString(userIdStr);
 
         Page<ProductDto> productPage = service.findAll(userId, search, pageable);
         model.addAttribute("paging", productPage);
@@ -65,7 +65,7 @@ public class ProductController {
     }
 
     @GetMapping("items/{id}")
-    public String showItemById(HttpServletRequest request, @PathVariable("id") UUID id, Model model){
+    public String showItemById(HttpServletRequest request, @PathVariable("id") UUID id, Model model) {
         UUID userId = UUID.fromString((String) request.getAttribute(CookieConstants.USER_ID_COOKIE_NAME));
         model.addAttribute("item", service.findById(userId, id));
         return "item.html";
@@ -87,47 +87,7 @@ public class ProductController {
             @RequestParam("stockQuantity") int stockQuantity,
             Model model) {
 
-        try {
-            // 1. Сохранение изображения
-            String imgPath = saveImage(image);
-            if (imgPath == null) {
-                model.addAttribute("errorMessage", "Ошибка сохранения изображения.");
-                return "new-product"; // Возврат к форме с сообщением об ошибке
-            }
-
-            service.createProduct(title, description, image, price, stockQuantity);
-
-            // 4. Перенаправление на страницу списка продуктов
-            return "redirect:/catalog/items";
-
-        } catch (IOException e) {
-            model.addAttribute("errorMessage", "Ошибка при обработке изображения: " + e.getMessage());
-            return "new-product"; // Возврат к форме с сообщением об ошибке
-        }
-    }
-
-
-    private String saveImage(MultipartFile image) throws IOException {
-   /*     if (image.isEmpty()) {
-            return null;
-        }
-
-        // Путь к директории для сохранения изображений (должна существовать)
-        String uploadDir = "src/main/resources/static/images"; // Относительный путь
-        Path uploadPath = Paths.get(uploadDir);
-
-        if (!Files.exists(uploadPath)) {
-            Files.createDirectories(uploadPath);
-        }
-
-        // Генерируем уникальное имя файла
-        String fileName = UUID.randomUUID().toString() + "_" + image.getOriginalFilename();
-        Path filePath = uploadPath.resolve(fileName);
-
-        // Сохраняем файл
-        Files.copy(image.getInputStream(), filePath);
-
-        return "/images/" + fileName; // Возвращаем путь к файлу для сохранения в базе данных*/
-        return "";
+        service.createProduct(title, description, image, price, stockQuantity);
+        return "redirect:/catalog/items";
     }
 }
