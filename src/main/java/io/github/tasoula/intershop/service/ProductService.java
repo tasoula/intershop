@@ -9,7 +9,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -17,12 +20,15 @@ import java.util.stream.Collectors;
 public class ProductService {
 
     private final ProductRepository productRepository;
-    private final CartItemRepository cartItemRepository;
+    private final CartService cartService;
+
+    private final ImageService imageService;
 
 
-    public ProductService(ProductRepository repository, CartItemRepository cartItemRepository) {
+    public ProductService(ProductRepository repository, CartService cartService, ImageService imageService) {
         this.productRepository = repository;
-        this.cartItemRepository = cartItemRepository;
+        this.cartService = cartService;
+        this.imageService = imageService;
     }
 
     public Page<ProductDto> findAll(UUID userId, String search, Pageable pageable) {
@@ -44,15 +50,29 @@ public class ProductService {
     }
 
     private ProductDto mapToDto(UUID userId, Product product) {
-        return new ProductDto(product, getCartQuantity(userId, product.getId()));
+        return new ProductDto(product, cartService.getCartQuantity(userId, product.getId()));
     }
 
-    public int getCartQuantity(UUID userId, UUID productId) {
-        if (userId == null) {
-            return 0;
-        }
-        return cartItemRepository.findByUserIdAndProductId(userId, productId)
-                .map(CartItem::getQuantity)
-                .orElse(0); // Если нет записи в корзине, то 0
+
+    @Transactional
+    public void createProduct(String title,
+                              String description,
+                              MultipartFile image,
+                              BigDecimal price,
+                              int stockQuantity) {
+
+        Product product = new Product();
+        product.setTitle(title);
+        product.setDescription(description);
+        product.setPrice(price);
+        product.setStockQuantity(stockQuantity);
+
+        String filename = UUID.randomUUID() + "_" + image.getOriginalFilename();
+        product.setImgPath(filename);
+
+        productRepository.save(product);
+        imageService.saveToDisc(image, filename);
     }
+
+
 }

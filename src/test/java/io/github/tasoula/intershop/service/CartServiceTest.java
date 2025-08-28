@@ -213,4 +213,32 @@ class CartServiceTest  {
         assertFalse(isEmpty);
     }
 
+    @Test
+    void getCartQuantity_UserIsNotNull_ReturnsQuantityFromCartItemRepository() {
+        CartItem cartItem = new CartItem();
+        cartItem.setUser(new User(userId));
+        cartItem.setProduct(new Product(productId));
+        cartItem.setQuantity(5);
+
+        when(cartItemRepository.findByUserIdAndProductId(userId, productId)).thenReturn(Optional.of(cartItem));
+        int quantity = cartService.getCartQuantity(userId, productId);
+        assertEquals(5, quantity);
+        verify(cartItemRepository).findByUserIdAndProductId(userId, productId);
+    }
+
+    @Test
+    void getCartQuantity_UserIsNotNull_ReturnsZeroIfCartItemNotFound() {
+        when(cartItemRepository.findByUserIdAndProductId(userId, productId)).thenReturn(Optional.empty());
+        int quantity = cartService.getCartQuantity(userId, productId);
+        assertEquals(0, quantity);
+        verify(cartItemRepository).findByUserIdAndProductId(userId, productId);
+    }
+
+    @Test
+    void getCartQuantity_UserIsNull_ReturnsZero() {
+        int quantity = cartService.getCartQuantity(null, productId);
+        assertEquals(0, quantity);
+        verifyNoInteractions(cartItemRepository);
+    }
+
 }

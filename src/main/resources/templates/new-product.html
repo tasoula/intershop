@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Добавить новый продукт</title>
+</head>
+<body>
+<a th:href="@{/catalog/products}" style="float:right;">
+    <b>К списку продуктов &cudarrr;</b>
+</a>
+
+<h1>Добавить новый продукт</h1>
+
+<form method="POST" th:action="@{/catalog/products}" enctype="multipart/form-data">
+    <table style="width:50%;margin-left:auto;margin-right:auto;">
+        <tr>
+            <td>
+                <h3>Наименование</h3>
+                <input type="text" style="width: 100%;" name="title" id="title" required>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <h3>Описание</h3>
+                <textarea rows="5" style="width: 100%;" name="description" id="description"></textarea>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <h3>Изображение</h3>
+                <input type="file" name="image" accept="image/*">
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <h3>Цена</h3>
+                <input type="number" step="0.01" style="width: 100%;" name="price" id="price" required>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <h3>Количество на складе</h3>
+                <input type="number" style="width: 100%;" name="stockQuantity" id="stockQuantity" required>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <button type="submit" style="float:right;">Сохранить</button>
+            </td>
+        </tr>
+    </table>
+</form>
+</body>
+</html>

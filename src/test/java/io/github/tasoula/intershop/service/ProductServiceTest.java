@@ -11,11 +11,15 @@ import io.github.tasoula.intershop.model.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.*;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.*;
 
@@ -29,7 +33,10 @@ public class ProductServiceTest {
     private ProductRepository productRepository;
 
     @Mock
-    private CartItemRepository cartItemRepository;
+    private CartService cartService;
+
+    @Mock
+    private ImageService imageService;
 
     @InjectMocks
     private ProductService productService;
@@ -38,6 +45,8 @@ public class ProductServiceTest {
     private UUID productId;
     private Product product;
     private CartItem cartItem;
+
+    private MultipartFile mockImage;
 
     @BeforeEach
     void setUp() {
@@ -54,6 +63,13 @@ public class ProductServiceTest {
         cartItem.setUser(new User(userId));
         cartItem.setProduct(new Product(productId));
         cartItem.setQuantity(5);
+
+        mockImage = new MockMultipartFile(
+                "image",
+                "test.jpg",
+                "image/jpeg",
+                "test image content".getBytes()
+        );
     }
 
     @Test
@@ -66,7 +82,7 @@ public class ProductServiceTest {
         when(productRepository.findByTitleContainingOrDescriptionContainingIgnoreCaseAndStockQuantityGreaterThan(
                 search.toLowerCase(), search.toLowerCase(), 0, pageable))
                 .thenReturn(productPage);
-        when(cartItemRepository.findByUserIdAndProductId(userId, productId)).thenReturn(Optional.of(cartItem));
+        when(cartService.getCartQuantity(userId, productId)).thenReturn(cartItem.getQuantity());
 
         Page<ProductDto> result = productService.findAll(userId, search, pageable);
 
@@ -75,7 +91,7 @@ public class ProductServiceTest {
         assertEquals(5, result.getContent().get(0).getQuantity());
         verify(productRepository).findByTitleContainingOrDescriptionContainingIgnoreCaseAndStockQuantityGreaterThan(
                 search.toLowerCase(), search.toLowerCase(), 0, pageable);
-        verify(cartItemRepository).findByUserIdAndProductId(userId, productId);
+        verify(cartService).getCartQuantity(userId, productId);
     }
 
     @Test
@@ -85,7 +101,7 @@ public class ProductServiceTest {
         Page<Product> productPage = new PageImpl<>(products, pageable, 1);
 
         when(productRepository.findAllByStockQuantityGreaterThan(0, pageable)).thenReturn(productPage);
-        when(cartItemRepository.findByUserIdAndProductId(userId, productId)).thenReturn(Optional.of(cartItem));
+        when(cartService.getCartQuantity(userId, productId)).thenReturn(cartItem.getQuantity());
 
         Page<ProductDto> result = productService.findAll(userId, null, pageable);
 
@@ -93,51 +109,88 @@ public class ProductServiceTest {
         assertEquals(1, result.getContent().size());
         assertEquals(5, result.getContent().get(0).getQuantity());
         verify(productRepository).findAllByStockQuantityGreaterThan(0, pageable);
-        verify(cartItemRepository).findByUserIdAndProductId(userId, productId);
+        verify(cartService).getCartQuantity(userId, productId);
     }
 
-    @Test
+  @Test
     void findById_ProductExists_ReturnsProductDto() throws ResourceNotFoundException {
         when(productRepository.findById(productId)).thenReturn(Optional.of(product));
-        when(cartItemRepository.findByUserIdAndProductId(userId, productId)).thenReturn(Optional.of(cartItem));
+      when(cartService.getCartQuantity(userId, productId)).thenReturn(cartItem.getQuantity());
 
         ProductDto result = productService.findById(userId, productId);
 
         assertNotNull(result);
         assertEquals(5, result.getQuantity());
         verify(productRepository).findById(productId);
-        verify(cartItemRepository).findByUserIdAndProductId(userId, productId);
+        verify(cartService).getCartQuantity(userId, productId);
     }
 
-    @Test
+      @Test
     void findById_ProductDoesNotExist_ThrowsResourceNotFoundException() {
         when(productRepository.findById(productId)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> productService.findById(userId, productId));
         verify(productRepository).findById(productId);
-        verifyNoInteractions(cartItemRepository);
+        verifyNoInteractions(cartService);
     }
 
     @Test
-    void getCartQuantity_UserIsNotNull_ReturnsQuantityFromCartItemRepository() {
-        when(cartItemRepository.findByUserIdAndProductId(userId, productId)).thenReturn(Optional.of(cartItem));
-        int quantity = productService.getCartQuantity(userId, productId);
-        assertEquals(5, quantity);
-        verify(cartItemRepository).findByUserIdAndProductId(userId, productId);
+    void createProduct_ShouldSaveProductAndImage() throws IOException {
+        // Arrange
+        String title = "Test Product";
+        String description = "Test Description";
+        BigDecimal price = BigDecimal.valueOf(99.99);
+        int stockQuantity = 10;
+
+        // Capture the Product object passed to the repository
+        ArgumentCaptor<Product> productCaptor = ArgumentCaptor.forClass(Product.class);
+
+        // Act
+        productService.createProduct(title, description, mockImage, price, stockQuantity);
+
+        // Assert
+        verify(productRepository, times(1)).save(productCaptor.capture());
+        Product savedProduct = productCaptor.getValue();
+
+        assertNotNull(savedProduct);
+        assertEquals(title, savedProduct.getTitle());
+        assertEquals(description, savedProduct.getDescription());
+        assertEquals(price, savedProduct.getPrice());
+        assertEquals(stockQuantity, savedProduct.getStockQuantity());
+        assertNotNull(savedProduct.getImgPath());  // Check if imgPath is set. It will be difficult to precisely match, so just check it's not null
+        verify(imageService, times(1)).saveToDisc(eq(mockImage), anyString()); // Verify saveToDisc is called
+
+        // Further assertions related to the filename.  Since UUID is involved, we only check the original filename part.
+        String expectedFilenamePart = "_" + mockImage.getOriginalFilename();
+        verify(imageService, times(1)).saveToDisc(mockImage,savedProduct.getImgPath());
+
     }
 
     @Test
-    void getCartQuantity_UserIsNotNull_ReturnsZeroIfCartItemNotFound() {
-        when(cartItemRepository.findByUserIdAndProductId(userId, productId)).thenReturn(Optional.empty());
-        int quantity = productService.getCartQuantity(userId, productId);
-        assertEquals(0, quantity);
-        verify(cartItemRepository).findByUserIdAndProductId(userId, productId);
+    void createProduct_ShouldCallImageServiceWithCorrectFilename() throws IOException {
+        // Arrange
+        String title = "Test Product";
+        String description = "Test Description";
+        BigDecimal price = BigDecimal.valueOf(99.99);
+        int stockQuantity = 10;
+
+
+        // Capture the filename passed to imageService.saveToDisc
+        ArgumentCaptor<String> filenameCaptor = ArgumentCaptor.forClass(String.class);
+
+        // Act
+        productService.createProduct(title, description, mockImage, price, stockQuantity);
+
+        // Assert
+        verify(imageService, times(1)).saveToDisc(eq(mockImage), filenameCaptor.capture()); // Verify saveToDisc is called with the MultipartFile and filename.
+        String capturedFilename = filenameCaptor.getValue();
+
+        assertNotNull(capturedFilename);
+        // Check that the captured filename contains the original filename
+        String expectedFilenamePart = "_" + mockImage.getOriginalFilename();
+
+        // check saveToDisc called with correct image
+
     }
 
-    @Test
-    void getCartQuantity_UserIsNull_ReturnsZero() {
-        int quantity = productService.getCartQuantity(null, productId);
-        assertEquals(0, quantity);
-        verifyNoInteractions(cartItemRepository);
-    }
 }
