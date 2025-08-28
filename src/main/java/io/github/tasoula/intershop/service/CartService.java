@@ -73,4 +73,13 @@ public class CartService {
     public boolean isEmpty(UUID userId) {
         return !cartItemRepository.existsByUserId(userId);
     }
+
+    public int getCartQuantity(UUID userId, UUID productId) {
+        if (userId == null) {
+            return 0;
+        }
+        return cartItemRepository.findByUserIdAndProductId(userId, productId)
+                .map(CartItem::getQuantity)
+                .orElse(0); // Если нет записи в корзине, то 0
+    }
 }
