@@ -1,0 +1,39 @@
+version: "3.8"
+services:
+  db:
+    image: postgres:16-alpine  # Используйте версию Postgres, совместимую с вашей схемой
+    container_name: postgres
+    environment:
+      POSTGRES_USER: ${INTERSHOP_DB_USERNAME}
+      POSTGRES_PASSWORD: ${INTERSHOP_DB_PASSWORD}
+      POSTGRES_DB: ${INTERSHOP_DB_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data  # Сохраняем данные между перезапусками
+    networks:
+      - mynetwork
+
+  app:
+    build: .  # Указывает Docker Compose использовать Dockerfile в текущей директории
+    container_name: intershop-app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    environment:
+      INTERSHOP_DB_URL: jdbc:postgresql://db:5432/${INTERSHOP_DB_USERNAME}
+      INTERSHOP_DB_USERNAME: ${INTERSHOP_DB_USERNAME}
+      INTERSHOP_DB_PASSWORD: ${INTERSHOP_DB_PASSWORD}
+      COOKIE_MAX_AGE_SECONDS: 86400
+
+    networks:
+      - mynetwork
+    volumes:
+      - upload_data:/app/images  # Если нужно сохранять загруженные изображения
+volumes:
+  db_data:
+  upload_data:
+
+networks:
+  mynetwork:
