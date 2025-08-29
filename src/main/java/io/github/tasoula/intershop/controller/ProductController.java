@@ -1,14 +1,18 @@
 package io.github.tasoula.intershop.controller;
 
-import io.github.tasoula.intershop.dto.ProductCatalogItemDto;
-import io.github.tasoula.intershop.interceptor.UserInterceptor;
+import io.github.tasoula.intershop.dto.ProductDto;
+import io.github.tasoula.intershop.exceptions.ResourceNotFoundException;
+import io.github.tasoula.intershop.interceptor.CookieConstants;
 import io.github.tasoula.intershop.service.ProductService;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Controller
@@ -50,24 +54,10 @@ public class ProductController {
         };
 
         Pageable pageable = PageRequest.of(pageNumber, pageSize, sortObj.ascending());
+        String userIdStr = (String) request.getAttribute(CookieConstants.USER_ID_COOKIE_NAME);
+        UUID userId = (userIdStr == null || userIdStr.isEmpty()) ? null : UUID.fromString(userIdStr);
 
-      /*     List<Product> productItems = List.of(
-                new Product(
-                    UUID.randomUUID(),
-                    "product",
-                    "description",
-                    "image.jpg",
-                    BigDecimal.valueOf(100.00),
-                        10)
-        );
-
-        Page<Product> productPage = new PageImpl<>(productItems, pageable, productItems.size());
-    */
-
-        String userIdStr = (String) request.getAttribute(UserInterceptor.USER_ID_COOKIE_NAME);
-        UUID userId = (userIdStr==null || userIdStr.isEmpty()) ? null: UUID.fromString(userIdStr);
-
-        Page<ProductCatalogItemDto> productPage = service.findAll(userId, search, pageable);
+        Page<ProductDto> productPage = service.findAll(userId, search, pageable);
         model.addAttribute("paging", productPage);
         model.addAttribute("items", productPage.getContent());
 
@@ -75,9 +65,29 @@ public class ProductController {
     }
 
     @GetMapping("items/{id}")
-    public String showItemById(HttpServletRequest request, @PathVariable("id") UUID id, Model model){
-        UUID userId = UUID.fromString((String) request.getAttribute(UserInterceptor.USER_ID_COOKIE_NAME));
-        model.addAttribute("item", service.findByUserId(userId, id));
+    public String showItemById(HttpServletRequest request, @PathVariable("id") UUID id, Model model) {
+        UUID userId = UUID.fromString((String) request.getAttribute(CookieConstants.USER_ID_COOKIE_NAME));
+        model.addAttribute("item", service.findById(userId, id));
         return "item.html";
+    }
+
+
+    @GetMapping("/products/new") // URL для отображения формы
+    public String newProductForm(Model model) {
+        // Можно добавить атрибуты в модель, если они необходимы (например, для ошибок)
+        return "new-product"; // Имя вашего Thymeleaf шаблона
+    }
+
+    @PostMapping("/products")
+    public String createProduct(
+            @RequestParam("title") String title,
+            @RequestParam("description") String description,
+            @RequestParam("image") MultipartFile image,
+            @RequestParam("price") BigDecimal price,
+            @RequestParam("stockQuantity") int stockQuantity,
+            Model model) {
+
+        service.createProduct(title, description, image, price, stockQuantity);
+        return "redirect:/catalog/items";
     }
 }

@@ -6,6 +6,6 @@
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd">
 
     <include file="001-ctreate-tables.xml" relativeToChangelogFile="true"/>
-    <include file="insert-initial-data-to-products-table.xml" relativeToChangelogFile="true"/>
+    <include file="insert-initial-data-to-products-table.xml" relativeToChangelogFile="true" context="!test"/>
 
 </databaseChangeLog>

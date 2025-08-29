@@ -33,7 +33,7 @@
 
     <form class="cart-form">
         <button type="button" name="action" value="minus">-</button>
-        <span th:text="${item.getCartQuantity()}"></span>
+        <span th:text="${item.getQuantity()}"></span>
         <button type="button" name="action" value="plus">+</button>
         <button type="button" class="add-to-cart" name="action" value="plus">В корзину</button>
     </form>

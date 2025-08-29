@@ -27,4 +27,9 @@ public class User {
     protected void onCreate() {
         createdAt = new Timestamp(System.currentTimeMillis());
     }
+
+    public User(UUID userId){
+        this.id = userId;
+        this.createdAt = new Timestamp(System.currentTimeMillis());
+    }
 }
