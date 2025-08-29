@@ -1,6 +1,7 @@
 package io.github.tasoula.intershop.controller;
 
 import io.github.tasoula.intershop.dto.ProductDto;
+import io.github.tasoula.intershop.enums.CartAction;
 import io.github.tasoula.intershop.interceptor.CookieConstants;
 import io.github.tasoula.intershop.service.CartService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -47,17 +48,19 @@ public class CartController {
     }
 
     @PostMapping("items/{id}")
-    public ResponseEntity<Integer> changeProductQuantityInCart(HttpServletRequest request,
+    public ResponseEntity<Integer> changeProductQuantityInCart2(HttpServletRequest request,
                                                                @PathVariable("id") UUID productId,
-                                                               @RequestParam("action") String action) {
+                                                               @RequestParam("action") CartAction action) {
         UUID userId = UUID.fromString((String) request.getAttribute(CookieConstants.USER_ID_COOKIE_NAME));
 
         int newQuantity = 0;
-        if(action.equals("delete")){
-            service.deleteCartItem(userId, productId);
-        }
-        else {
-            newQuantity = service.changeProductQuantityInCart(userId, productId, action.equals("plus") ? 1 : -1);
+        switch (action){
+            case PLUS -> newQuantity = service.changeProductQuantityInCart(userId, productId, 1);
+            case MINUS -> newQuantity = service.changeProductQuantityInCart(userId, productId, -1);
+            case DELETE -> service.deleteCartItem(userId, productId);
+            default -> {
+                return ResponseEntity.badRequest().build();
+            }
         }
 
         return ResponseEntity.ok(newQuantity);
