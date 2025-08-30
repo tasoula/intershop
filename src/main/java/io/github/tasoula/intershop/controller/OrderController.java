@@ -1,9 +1,8 @@
 package io.github.tasoula.intershop.controller;
 
+import io.github.tasoula.intershop.annotations.UserId;
 import io.github.tasoula.intershop.exceptions.ResourceNotFoundException;
-import io.github.tasoula.intershop.interceptor.CookieConstants;
 import io.github.tasoula.intershop.service.OrderService;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -21,9 +20,8 @@ public class OrderController {
     }
 
     @GetMapping
-    public String show(HttpServletRequest request,
+    public String show(@UserId UUID userId,
                             Model model) {
-        UUID userId = UUID.fromString((String) request.getAttribute(CookieConstants.USER_ID_COOKIE_NAME));
         model.addAttribute("orders", service.getByUserId(userId));
         return "orders.html";
     }
@@ -38,8 +36,7 @@ public class OrderController {
     }
 
     @PostMapping("new")
-    public String createOrder(HttpServletRequest request, Model model) {
-        UUID userId = UUID.fromString((String) request.getAttribute(CookieConstants.USER_ID_COOKIE_NAME));
+    public String createOrder(@UserId UUID userId, Model model) {
         Optional<UUID> orderId = service.createOrder(userId);
         return orderId.map(uuid -> "redirect:/orders/" + uuid + "?newOrder=true").orElse("redirect:/cart/items");
     }
