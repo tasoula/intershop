@@ -118,14 +118,9 @@
 
 **1. Настройка окружения:**
 
-•   Создайте файл `.env` в той же директории, где находится `Dockerfile`.
-•   Заполните переменные окружения  для подключения к базе данных: INTERSHOP_DB_NAME, INTERSHOP_DB_USERNAME, INTERSHOP_DB_PASSWORD (см. `.env.example`.)
+•   Установите переменные окружения  для подключения к базе данных: INTERSHOP_DB_NAME, INTERSHOP_DB_USERNAME, INTERSHOP_DB_PASSWORD, UPLOAD_IMAGES_DIR
 
-**2. Укажите путь к директории с изображениями в `Dockerfile`:**
-
-•   В файле `Dockerfile` найдите строку `COPY /path/to/your/upload/directory /app/images` и замените `/path/to/your/upload/directory` на актуальный путь к вашей директории с изображениями на локальной машине. **Важно:** Убедитесь, что указанный путь существует!
-
-**3. Сборка и запуск Docker-контейнера:**
+**2. Сборка и запуск Docker-контейнера:**
 
 •   Соберите проект с помощью Gradle:
 ```bash
