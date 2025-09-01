@@ -1,17 +1,14 @@
 package io.github.tasoula.intershop.controller;
 
+import io.github.tasoula.intershop.annotations.UserId;
 import io.github.tasoula.intershop.dto.ProductDto;
-import io.github.tasoula.intershop.exceptions.ResourceNotFoundException;
-import io.github.tasoula.intershop.interceptor.CookieConstants;
 import io.github.tasoula.intershop.service.ProductService;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -34,7 +31,7 @@ public class ProductController {
     }
 
     @GetMapping("items")
-    public String showItems(HttpServletRequest request,
+    public String showItems(@UserId UUID userId,
                             @RequestParam(name = "search", required = false) String search,
                             @RequestParam(name = "sort", required = false, defaultValue = "NO") String sort,
                             @RequestParam(name = "pageSize", required = false, defaultValue = "10") Integer pageSize,
@@ -54,9 +51,6 @@ public class ProductController {
         };
 
         Pageable pageable = PageRequest.of(pageNumber, pageSize, sortObj.ascending());
-        String userIdStr = (String) request.getAttribute(CookieConstants.USER_ID_COOKIE_NAME);
-        UUID userId = (userIdStr == null || userIdStr.isEmpty()) ? null : UUID.fromString(userIdStr);
-
         Page<ProductDto> productPage = service.findAll(userId, search, pageable);
         model.addAttribute("paging", productPage);
         model.addAttribute("items", productPage.getContent());
@@ -65,8 +59,7 @@ public class ProductController {
     }
 
     @GetMapping("items/{id}")
-    public String showItemById(HttpServletRequest request, @PathVariable("id") UUID id, Model model) {
-        UUID userId = UUID.fromString((String) request.getAttribute(CookieConstants.USER_ID_COOKIE_NAME));
+    public String showItemById(@UserId UUID userId, @PathVariable("id") UUID id, Model model) {
         model.addAttribute("item", service.findById(userId, id));
         return "item.html";
     }

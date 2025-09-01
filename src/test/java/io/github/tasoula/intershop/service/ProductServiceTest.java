@@ -42,6 +42,7 @@ public class ProductServiceTest {
     private ProductService productService;
 
     private UUID userId;
+    private User user;
     private UUID productId;
     private Product product;
     private CartItem cartItem;
@@ -51,6 +52,9 @@ public class ProductServiceTest {
     @BeforeEach
     void setUp() {
         userId = UUID.randomUUID();
+        user = new User();
+        user.setId(userId);
+
         productId = UUID.randomUUID();
         product = new Product();
         product.setId(productId);
@@ -60,8 +64,8 @@ public class ProductServiceTest {
         product.setStockQuantity(100);
 
         cartItem = new CartItem();
-        cartItem.setUser(new User(userId));
-        cartItem.setProduct(new Product(productId));
+        cartItem.setUser(user);
+        cartItem.setProduct(product);
         cartItem.setQuantity(5);
 
         mockImage = new MockMultipartFile(

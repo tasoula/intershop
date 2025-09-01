@@ -70,10 +70,10 @@
             <div class="item-title" th:text="${item.getTitle()}"></div>
             <div class="item-price" th:text="${item.getPrice() + ' руб.'}"></div>
             <form class="cart-form">
-                <button type="button" name="action" value="minus">-</button>
+                <button type="button" name="action" value="MINUS">-</button>
                 <span th:text="${item.getQuantity()}"></span>
-                <button type="button" name="action" value="plus">+</button>
-                <button type="button" class="add-to-cart" name="action" value="plus">В корзину</button>
+                <button type="button" name="action" value="PLUS">+</button>
+                <button type="button" class="add-to-cart" name="action" value="PLUS">В корзину</button>
             </form>
         </div>
     </div>

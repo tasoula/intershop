@@ -39,7 +39,4 @@ public class Product {
     @Column(name = "stock_quantity", nullable = false)
     private int stockQuantity;
 
-    public Product(UUID productId) {
-        this.id = productId;
-    }
 }

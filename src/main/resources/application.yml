@@ -12,7 +12,15 @@ spring:
     liquibase:
         change-log: classpath:/db/changelog/db.changelog-master.xml
 
-upload.images.dir: images
-cookie.max.age.seconds: 86400  # 1 day in seconds (60 × 60 × 24)
+upload.images.dir: ${UPLOAD_IMAGES_DIR:/app/images}
+
+cookie:
+    user:
+        id:
+            name: userId
+
+    max:
+        age:
+            seconds: 86400
 
 
