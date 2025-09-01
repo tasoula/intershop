@@ -7,6 +7,7 @@ import io.github.tasoula.intershop.exceptions.ResourceNotFoundException;
 import io.github.tasoula.intershop.model.CartItem;
 import io.github.tasoula.intershop.model.Product;
 import io.github.tasoula.intershop.model.User;
+import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,11 +19,12 @@ import java.util.stream.Collectors;
 @Service
 public class CartService {
     private final CartItemRepository cartItemRepository;
-    private final ProductRepository productRepository;
+    private final EntityManager entityManager;
 
-    public CartService(CartItemRepository cartItemRepository, ProductRepository productRepository) {
+
+    public CartService(CartItemRepository cartItemRepository, EntityManager entityManager) {
         this.cartItemRepository = cartItemRepository;
-        this.productRepository = productRepository;
+        this.entityManager = entityManager;
     }
 
     public List<ProductDto> findByUserId(UUID userId) {
@@ -39,11 +41,10 @@ public class CartService {
     @Transactional
     public int changeProductQuantityInCart(UUID userId, UUID productId, int changeQuantity) {
 
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() ->  new ResourceNotFoundException("Product with id " + productId + " not found."));
+        Product product = entityManager.getReference(Product.class, productId);
 
         CartItem cartItem = cartItemRepository.findByUserIdAndProductId(userId, productId)
-                .orElseGet(() -> new CartItem(new User(userId), product));
+                .orElseGet(() -> new CartItem(entityManager.getReference(User.class, userId), product));
 
         int newQuantity = cartItem.getQuantity() + changeQuantity;
 

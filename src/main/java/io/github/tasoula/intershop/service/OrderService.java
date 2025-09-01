@@ -5,6 +5,7 @@ import io.github.tasoula.intershop.dao.OrderRepository;
 import io.github.tasoula.intershop.dto.OrderDto;
 import io.github.tasoula.intershop.dto.ProductDto;
 import io.github.tasoula.intershop.model.*;
+import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,9 +20,12 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final CartItemRepository cartItemRepository;
 
-    public OrderService(CartItemRepository cartItemRepository, OrderRepository orderRepository) {
+    private final EntityManager entityManager;
+
+    public OrderService(CartItemRepository cartItemRepository, OrderRepository orderRepository, EntityManager entityManager) {
         this.cartItemRepository = cartItemRepository;
         this.orderRepository = orderRepository;
+        this.entityManager = entityManager;
     }
 
     @Transactional
@@ -37,7 +41,7 @@ public class OrderService {
             return Optional.empty();
 
         Order order = new Order();
-        order.setUser(new User(userId));
+        order.setUser(entityManager.getReference(User.class, userId));
 
         List<OrderItem> orderItems = cartItems.stream()
                 .map(cartItem -> {
