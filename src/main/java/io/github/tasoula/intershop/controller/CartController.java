@@ -16,7 +16,7 @@ import java.util.UUID;
 @Controller
 @RequestMapping("/cart")
 public class CartController {
-
+/*
     private final CartService service;
 
     public CartController(CartService service) {
@@ -59,4 +59,6 @@ public class CartController {
 
         return ResponseEntity.ok(newQuantity);
     }
+
+ */
 }

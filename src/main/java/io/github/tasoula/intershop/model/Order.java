@@ -1,17 +1,19 @@
 package io.github.tasoula.intershop.model;
 
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.UUID;
 
-@Entity
 @Table(name = "t_orders")
 @NoArgsConstructor
 @AllArgsConstructor
@@ -19,24 +21,18 @@ import java.util.UUID;
 @Setter
 public class Order {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
+    @Column("user_id")
     private User user;
 
-    @Column(name = "created_at", nullable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    @CreatedDate //  Аннотация для автоматического заполнения поля при создании записи
+    // Убедитесь, что в вашей базе данных колонка created_at определена как TIMESTAMP или аналогичный тип, и что она не имеет значения по умолчанию, если вы используете @CreatedDate
+    @Column("created_at")
     private Timestamp createdAt;
 
-    @Column(name = "total_amount", nullable = false)
+    @Column("total_amount")
     private BigDecimal totalAmount;
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<OrderItem> orderItems;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = new Timestamp(System.currentTimeMillis());
-    }
+    //todo: добавить version
 }

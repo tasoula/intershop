@@ -7,7 +7,6 @@ import io.github.tasoula.intershop.exceptions.ResourceNotFoundException;
 import io.github.tasoula.intershop.model.CartItem;
 import io.github.tasoula.intershop.model.Product;
 import io.github.tasoula.intershop.model.User;
-import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +17,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class CartService {
+
+    /*
     private final CartItemRepository cartItemRepository;
     private final EntityManager entityManager;
 
@@ -27,7 +28,7 @@ public class CartService {
         this.entityManager = entityManager;
     }
 
-    public List<ProductDto> findByUserId(UUID userId) {
+ /*   public List<ProductDto> findByUserId(UUID userId) {
         return cartItemRepository.findByUserIdOrderByCreatedAtDesc(userId)
                 .stream()
                 .map(this::convertToProductDto)
@@ -83,4 +84,6 @@ public class CartService {
                 .map(CartItem::getQuantity)
                 .orElse(0); // Если нет записи в корзине, то 0
     }
+
+  */
 }

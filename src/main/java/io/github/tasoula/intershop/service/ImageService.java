@@ -7,6 +7,7 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import reactor.core.publisher.Mono;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,8 +30,8 @@ public class ImageService {
         this.repository = repository;
     }
 
-    public Optional<Resource> getImage(UUID postId) {
-        String fileName = repository.findImgPathById(postId);
+ /*   public Mono<Resource> getImage(UUID postId) {
+        Mono<String> fileName = repository.findImgPathById(postId);
         if (fileName == null) {
             return Optional.empty();
         }
@@ -57,4 +58,6 @@ public class ImageService {
             log.error("Не удалось загрузить изобраение: {}", e.getMessage(), e);
         }
     }
+
+  */
 }

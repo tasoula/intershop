@@ -13,7 +13,7 @@ import java.util.UUID;
 @Controller
 @RequestMapping("/orders")
 public class OrderController {
-    private final OrderService service;
+ /*   private final OrderService service;
 
     public OrderController(OrderService service) {
         this.service = service;
@@ -40,4 +40,6 @@ public class OrderController {
         Optional<UUID> orderId = service.createOrder(userId);
         return orderId.map(uuid -> "redirect:/orders/" + uuid + "?newOrder=true").orElse("redirect:/cart/items");
     }
+
+  */
 }

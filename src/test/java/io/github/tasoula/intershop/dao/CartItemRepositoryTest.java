@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class CartItemRepositoryTest extends SpringBootPostgreSQLBase {
 
-    @Autowired
+ /*   @Autowired
     private TestEntityManager entityManager;
 
     @Autowired
@@ -169,4 +169,6 @@ public class CartItemRepositoryTest extends SpringBootPostgreSQLBase {
         List<CartItem> cartItems = cartItemRepository.findByUserId(user.getId());
         assertThat(cartItems).isEmpty();
     }
+
+  */
 }

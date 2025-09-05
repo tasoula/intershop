@@ -16,7 +16,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 public abstract class SpringBootPostgreSQLBase {
 
-    @Value("${spring.database.name}")
+/*    @Value("${spring.database.name}")
     private String databaseName;
 
     @Value("${spring.database.username}")
@@ -46,7 +46,5 @@ public abstract class SpringBootPostgreSQLBase {
         registry.add("spring.datasource.password", postgres::getPassword);
     }
 
-
-
-
+ */
 } 

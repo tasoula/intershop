@@ -5,7 +5,6 @@ import io.github.tasoula.intershop.dao.OrderRepository;
 import io.github.tasoula.intershop.dto.OrderDto;
 import io.github.tasoula.intershop.dto.ProductDto;
 import io.github.tasoula.intershop.model.*;
-import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,10 +16,10 @@ import java.util.UUID;
 @Service
 public class OrderService {
 
-    private final OrderRepository orderRepository;
+/*     private final OrderRepository orderRepository;
     private final CartItemRepository cartItemRepository;
 
-    private final EntityManager entityManager;
+   private final EntityManager entityManager;
 
     public OrderService(CartItemRepository cartItemRepository, OrderRepository orderRepository, EntityManager entityManager) {
         this.cartItemRepository = cartItemRepository;
@@ -104,6 +103,8 @@ public class OrderService {
                 totalAmount
         );
     }
+
+ */
 }
 
 
