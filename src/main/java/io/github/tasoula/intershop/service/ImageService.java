@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -31,28 +32,13 @@ public class ImageService {
         this.repository = repository;
     }
 
- /*   public Optional<Resource> getImage1(UUID postId) {
-        String fileName = repository.findImgPathById(postId);
-        if (fileName == null) {
-            return Optional.empty();
-        }
-
-        Path filePath = Paths.get(uploadDir, fileName);
-        return Optional.of(new FileSystemResource(filePath.toFile()));
-    }*/
-
     public Mono<Resource> getImage(UUID postId) {
         return repository.findImgPathById(postId)
-                .flatMap(fileName -> {
-                    if (fileName == null) {
-                        return Mono.empty(); // Возвращаем пустой Mono, если имя файла не найдено
-                    }
-
-                    Path filePath = Paths.get(uploadDir, fileName);
-                    return Mono.just((Resource) new FileSystemResource(filePath.toFile())); // Оборачиваем в Mono
-                })
-                .onErrorResume(e -> { // Обработка ошибок при чтении из БД
-                    log.error("Ошибка при получении имени файла для ID {}: {}", postId, e.getMessage(), e);
+                .filter(Objects::nonNull) // Отфильтровываем null значения
+                .map(fileName -> Paths.get(uploadDir, fileName)) // Формируем Path
+                .map(filePath -> (Resource) new FileSystemResource(filePath.toFile())) // Создаем Resource
+                .onErrorResume(e -> {
+                    log.error("Ошибка при получении изображения для ID {}: {}", postId, e.getMessage(), e);
                     return Mono.empty(); // Возвращаем пустой Mono в случае ошибки
                 });
     }
