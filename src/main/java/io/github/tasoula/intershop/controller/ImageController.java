@@ -17,7 +17,7 @@ import java.util.UUID;
 @Controller
 @RequestMapping("/catalog")
 public class ImageController {
-
+/*
     private final ImageService service;
 
     public ImageController(ImageService service) {
@@ -40,4 +40,6 @@ public class ImageController {
             return ResponseEntity.internalServerError().build(); // Обработка ошибок при чтении файла
         }
     }
+
+ */
 }

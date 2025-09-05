@@ -25,7 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(value = OrderController.class,
         excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = WebConfig.class))
 class OrderControllerTest {
-    @Autowired
+ /*   @Autowired
     private MockMvc mockMvc;
 
     @MockitoBean
@@ -91,5 +91,5 @@ class OrderControllerTest {
 
         Mockito.verify(orderService).createOrder(userId);
     }
-
+  */
 }

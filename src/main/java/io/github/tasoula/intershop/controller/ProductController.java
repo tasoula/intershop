@@ -8,6 +8,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -30,7 +32,7 @@ public class ProductController {
         return "redirect:/catalog/items";
     }
 
-    @GetMapping("items")
+ /*   @GetMapping("items")
     public String showItems(@UserId UUID userId,
                             @RequestParam(name = "search", required = false) String search,
                             @RequestParam(name = "sort", required = false, defaultValue = "NO") String sort,
@@ -58,6 +60,42 @@ public class ProductController {
         return "catalog.html";
     }
 
+  */
+
+    @GetMapping("items")
+    public Mono<String> showItems(
+            @UserId UUID userId,  // Предполагаем, что @UserId - это кастомная аннотация для извлечения ID пользователя
+            @RequestParam(name = "search", required = false) String search,
+            @RequestParam(name = "sort", required = false, defaultValue = "NO") String sort,
+            @RequestParam(name = "pageSize", required = false, defaultValue = "10") Integer pageSize,
+            @RequestParam(name = "pageNumber", required = false, defaultValue = "0") Integer pageNumber,
+            Model model,
+            ServerWebExchange exchange) { // ServerWebExchange для получения доступа к WebFlux контексту
+
+        if (pageSize <= 0) pageSize = 10;
+        if (pageNumber < 0) pageNumber = 0;
+
+        Sort sortObj = switch (sort) {
+            case "ALPHA" -> Sort.by(TITLE).ascending();
+            case "PRICE" -> Sort.by(PRICE).ascending();
+            default -> Sort.unsorted();
+        };
+
+        Pageable pageable = PageRequest.of(pageNumber, pageSize, sortObj);
+
+        // Вызов сервиса и обработка результата с использованием Mono
+        return   service.findAll(userId, search, pageable)
+                .doOnNext(productPage -> { // Обрабатываем полученный Page<ProductDto>
+                    model.addAttribute("search", search);
+                    model.addAttribute("sort", sort);
+                    model.addAttribute("paging", productPage);
+                    model.addAttribute("items", productPage.getContent());
+                })
+                .thenReturn("catalog.html"); // Возвращаем имя шаблона, после добавления атрибутов в модель
+    }
+
+    /*
+
     @GetMapping("items/{id}")
     public String showItemById(@UserId UUID userId, @PathVariable("id") UUID id, Model model) {
         model.addAttribute("item", service.findById(userId, id));
@@ -83,4 +121,6 @@ public class ProductController {
         service.createProduct(title, description, image, price, stockQuantity);
         return "redirect:/catalog/items";
     }
+
+     */
 }

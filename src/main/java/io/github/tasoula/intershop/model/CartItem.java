@@ -1,15 +1,16 @@
 package io.github.tasoula.intershop.model;
 
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.sql.Timestamp;
 import java.util.UUID;
 
-@Entity
 @Table(name = "t_cart_items")
 @NoArgsConstructor
 @AllArgsConstructor
@@ -17,26 +18,23 @@ import java.util.UUID;
 @Setter
 public class CartItem {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @Column("user_id")
+    private UUID userId;
 
-    @ManyToOne
-    @JoinColumn(name = "product_id")
-    private Product product;
+    @Column("product_id")
+    private UUID productId;
 
-    @Column(nullable = false, columnDefinition = "integer default 0")
     private int quantity;
 
-    @Column(name = "created_at", nullable = false)
     private Timestamp createdAt;
 
-    public CartItem(User user, Product product) {
-        this.user = user;
-        this.product = product;
+    //todo: добавить version
+
+    public CartItem(UUID userId, UUID productId) {
+        this.userId = userId;
+        this.productId = productId;
         this.createdAt = new Timestamp(System.currentTimeMillis());
     }
 }

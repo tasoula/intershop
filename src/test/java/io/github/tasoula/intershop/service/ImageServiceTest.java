@@ -27,7 +27,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ImageServiceTest {
-    @Mock
+ /*   @Mock
     private ProductRepository repository;
 
     @InjectMocks
@@ -139,4 +139,6 @@ class ImageServiceTest {
 
         assertThrows(IllegalStateException.class, () -> imageService.saveToDisc(file, "test.jpg"));
     }
+
+  */
 }

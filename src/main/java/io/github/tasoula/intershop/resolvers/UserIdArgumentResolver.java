@@ -7,8 +7,6 @@ import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
-import jakarta.servlet.http.HttpServletRequest;
-
 import java.util.NoSuchElementException;
 import java.util.UUID;
 
@@ -33,7 +31,7 @@ public class UserIdArgumentResolver implements HandlerMethodArgumentResolver {
                                   NativeWebRequest webRequest,
                                   WebDataBinderFactory binderFactory) throws Exception {
 
-        HttpServletRequest request = (HttpServletRequest) webRequest.getNativeRequest();
+     /*   HttpServletRequest request = (HttpServletRequest) webRequest.getNativeRequest();
         String userIdString =  (String) request.getAttribute(cookieName);
 
         if (userIdString == null || userIdString.isEmpty()) {
@@ -41,5 +39,8 @@ public class UserIdArgumentResolver implements HandlerMethodArgumentResolver {
         }
 
         return UUID.fromString(userIdString);
+
+      */
+        return null;
     }
 }

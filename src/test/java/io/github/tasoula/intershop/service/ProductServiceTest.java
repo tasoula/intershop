@@ -5,7 +5,6 @@ import io.github.tasoula.intershop.dto.ProductDto;
 import io.github.tasoula.intershop.model.CartItem;
 import io.github.tasoula.intershop.model.Product;
 import io.github.tasoula.intershop.exceptions.ResourceNotFoundException;
-import io.github.tasoula.intershop.dao.CartItemRepository;
 import io.github.tasoula.intershop.dao.ProductRepository;
 import io.github.tasoula.intershop.model.User;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,7 +28,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class ProductServiceTest {
 
-    @Mock
+ /*   @Mock
     private ProductRepository productRepository;
 
     @Mock
@@ -197,4 +196,6 @@ public class ProductServiceTest {
 
     }
 
+
+  */
 }

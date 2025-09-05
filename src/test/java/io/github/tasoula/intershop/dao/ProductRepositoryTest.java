@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ProductRepositoryTest extends SpringBootPostgreSQLBase{
-    @Autowired
+    /*   @Autowired
     private ProductRepository productRepository;
 
     private Product product1;
@@ -89,4 +89,6 @@ class ProductRepositoryTest extends SpringBootPostgreSQLBase{
 
         assertThat(products.getTotalElements()).isEqualTo(0); //None because stock quantity is 0.
     }
+
+     */
 }

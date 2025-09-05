@@ -22,7 +22,7 @@ public class UserService {
         this.repository = repository;
     }
 
-    public UUID createUser() {
+/*    public UUID createUser() {
         User savedUser = repository.save(new User());
         return savedUser.getId();
     }
@@ -39,5 +39,7 @@ public class UserService {
 
         System.out.println("Deleted expired users."); // Log для подтверждения работы
     }
+
+ */
 }
 
