@@ -63,26 +63,15 @@ public class ProductService {
     }
 
     public Mono<Page<ProductDto>> findAll(UUID userId, String search, Pageable pageable) {
-     //   Mono<Page<Product>> productPageMono = (search == null || search.isEmpty())
-     //           ? productRepository.findAllByStockQuantityGreaterThan(0, pageable) // Поиск без фильтра
-     //           : productRepository.findByTitleContainingOrDescriptionContainingIgnoreCaseAndStockQuantityGreaterThan(search.toLowerCase(), search.toLowerCase(), 0, pageable); // Поиск с фильтром
+        //   Mono<Page<Product>> productPageMono = (search == null || search.isEmpty())
+        //           ? productRepository.findAllByStockQuantityGreaterThan(0, pageable) // Поиск без фильтра
+        //           : productRepository.findByTitleContainingOrDescriptionContainingIgnoreCaseAndStockQuantityGreaterThan(search.toLowerCase(), search.toLowerCase(), 0, pageable); // Поиск с фильтром
 
-        Product product1 = new Product(UUID.randomUUID(), "title 1", "description 1", "6062209614.webp", BigDecimal.TEN, 8);
-        Product product2 = new Product(UUID.randomUUID(), "title 2", "description 1", "6062209614.webp", BigDecimal.TEN, 8);
-        Product product3 = new Product(UUID.randomUUID(), "title 3", "description 1", "6062209614.webp", BigDecimal.TEN, 8);
-        Product product4 = new Product(UUID.randomUUID(), "title 4", "description 1", "6062209614.webp", BigDecimal.TEN, 8);
-        Product product5 = new Product(UUID.randomUUID(), "title 5", "description 1", "6062209614.webp", BigDecimal.TEN, 8);
-        Product product6 = new Product(UUID.randomUUID(), "title 6", "description 1", "6062209614.webp", BigDecimal.TEN, 8);
-        Product product7 = new Product(UUID.randomUUID(), "title 7", "description 1", "6062209614.webp", BigDecimal.TEN, 8);
-        Product product8 = new Product(UUID.randomUUID(), "title 8", "description 1", "6062209614.webp", BigDecimal.TEN, 8);
-        Product product9 = new Product(UUID.randomUUID(), "title 9", "description 1", "6062209614.webp", BigDecimal.TEN, 8);
-        Product product10 = new Product(UUID.randomUUID(), "title 10", "description 1", "6062209614.webp", BigDecimal.TEN, 8);
-        Product product11 = new Product(UUID.randomUUID(), "title 11", "description 1", "6062209614.webp", BigDecimal.TEN, 8);
 
-        Flux<ProductDto> productDtoFlux = Flux.just(product1, product2, product3, product4, product5, product6, product7, product8, product9, product10,product11) // productRepository.findByStockQuantityGreaterThan(0, pageable)
+        Flux<ProductDto> productDtoFlux = productRepository.findByStockQuantityGreaterThan(0, pageable)
                 .flatMap(product -> mapToDto(userId, product));
 
-        Mono<Long> totalMono = Mono.just(11L); //productRepository.count(); // Получаем общее количество элементов
+        Mono<Long> totalMono = productRepository.count();
 
         Mono<List<ProductDto>> productDtoListMono = productDtoFlux.collectList();
 

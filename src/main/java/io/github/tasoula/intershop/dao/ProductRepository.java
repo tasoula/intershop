@@ -19,20 +19,19 @@ public interface ProductRepository extends R2dbcRepository<Product, UUID> {
 
     Flux<Product> findByStockQuantityGreaterThan(int quantity, Pageable pageable);
 
-
- //   Mono<Page<Product>> findByTitleContainingOrDescriptionContainingIgnoreCaseAndStockQuantityGreaterThan(String title, String description, int i, Pageable pageable); // Обратите внимание на Mono<Page<...>>
+    Flux<Product> findByTitleContainingOrDescriptionContainingIgnoreCaseAndStockQuantityGreaterThan(String title, String description, int i, Pageable pageable);
 //----------------------
 
     // R2DBC не поддерживает findAllBy... напрямую.  Нужно использовать @Query и SQL.
     // Пример:
- //   @Query("SELECT * FROM t_products WHERE stock_quantity > :stockQuantity LIMIT :limit OFFSET :offset") //Подставьте фактическое имя колонки 'stock_quantity' и таблицы 'product'
- //   Mono<Page<Product>> findAllByStockQuantityGreaterThan(int stockQuantity, long limit, long offset);
+    //   @Query("SELECT * FROM t_products WHERE stock_quantity > :stockQuantity LIMIT :limit OFFSET :offset") //Подставьте фактическое имя колонки 'stock_quantity' и таблицы 'product'
+    //   Mono<Page<Product>> findAllByStockQuantityGreaterThan(int stockQuantity, long limit, long offset);
 
 
     //R2DBC также не поддерживает findBy...ContainingIgnoreCase напрямую.  Нужно использовать @Query и SQL.
     //Пример:
- //   @Query("SELECT * FROM product WHERE (LOWER(title) LIKE LOWER(:titleLike) OR LOWER(description) LIKE LOWER(:descriptionLike)) AND stock_quantity > :stockQuantity LIMIT :limit OFFSET :offset") //Подставьте фактические имена колонок 'title', 'description' и 'stock_quantity' и таблицы 'product'
- //   Mono<Page<Product>> findByTitleContainingOrDescriptionContainingIgnoreCaseAndStockQuantityGreaterThan(String titleLike, String descriptionLike, int stockQuantity, long limit, long offset);
+    //   @Query("SELECT * FROM product WHERE (LOWER(title) LIKE LOWER(:titleLike) OR LOWER(description) LIKE LOWER(:descriptionLike)) AND stock_quantity > :stockQuantity LIMIT :limit OFFSET :offset") //Подставьте фактические имена колонок 'title', 'description' и 'stock_quantity' и таблицы 'product'
+    //   Mono<Page<Product>> findByTitleContainingOrDescriptionContainingIgnoreCaseAndStockQuantityGreaterThan(String titleLike, String descriptionLike, int stockQuantity, long limit, long offset);
 
 
  /*  default Mono<Page<Product>> findAllByStockQuantityGreaterThan(int i, Pageable pageable) {
