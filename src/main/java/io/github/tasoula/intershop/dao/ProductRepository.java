@@ -34,35 +34,13 @@ public interface ProductRepository extends R2dbcRepository<Product, UUID> {
     //   Mono<Page<Product>> findByTitleContainingOrDescriptionContainingIgnoreCaseAndStockQuantityGreaterThan(String titleLike, String descriptionLike, int stockQuantity, long limit, long offset);
 
 
- /*  default Mono<Page<Product>> findAllByStockQuantityGreaterThan(int i, Pageable pageable) {
-        return findAllByStockQuantityGreaterThan(i, pageable.getPageSize(), pageable.getOffset())
-                .zipWith(countByStockQuantityGreaterThan(i), (products, count) -> {
-                    return new org.springframework.data.domain.PageImpl<>(products.collectList().block(), pageable, count);
-                });
-    }
-
-
-    default Mono<Page<Product>> findByTitleContainingOrDescriptionContainingIgnoreCaseAndStockQuantityGreaterThan(String lowerCase, String lowerCase1, int i, Pageable pageable) {
-        String titleLike = "%" + lowerCase + "%";
-        String descriptionLike = "%" + lowerCase1 + "%";
-        return findByTitleContainingOrDescriptionContainingIgnoreCaseAndStockQuantityGreaterThan(titleLike, descriptionLike, i, pageable.getPageSize(), pageable.getOffset())
-                .zipWith(countByTitleContainingOrDescriptionContainingIgnoreCaseAndStockQuantityGreaterThan(lowerCase,lowerCase1,i), (products, count) -> {
-                    return new org.springframework.data.domain.PageImpl<>(products.collectList().block(), pageable, count);
-                });
-    }
-
+ /*
     @Query("SELECT COUNT(*) FROM product WHERE stock_quantity > :stockQuantity")//Подставьте фактическое имя колонки 'stock_quantity' и таблицы 'product'
     Mono<Long> countByStockQuantityGreaterThan(int stockQuantity);
 
     @Query("SELECT COUNT(*) FROM product WHERE (LOWER(title) LIKE LOWER(:titleLike) OR LOWER(description) LIKE LOWER(:descriptionLike)) AND stock_quantity > :stockQuantity") //Подставьте фактические имена колонок 'title', 'description' и 'stock_quantity' и таблицы 'product'
     Mono<Long> countByTitleContainingOrDescriptionContainingIgnoreCaseAndStockQuantityGreaterThan(String titleLike, String descriptionLike, int stockQuantity);
 
-
-    default Mono<Long> countByTitleContainingOrDescriptionContainingIgnoreCaseAndStockQuantityGreaterThan(String lowerCase,String lowerCase1, int i){
-        String titleLike = "%" + lowerCase + "%";
-        String descriptionLike = "%" + lowerCase1 + "%";
-        return countByTitleContainingOrDescriptionContainingIgnoreCaseAndStockQuantityGreaterThan(titleLike, descriptionLike,i);
-    }
 
   */
 }

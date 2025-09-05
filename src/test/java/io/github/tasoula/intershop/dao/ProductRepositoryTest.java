@@ -35,7 +35,6 @@ class ProductRepositoryTest extends SpringBootPostgreSQLBase{
         product1.setPrice(new BigDecimal("25.00"));
         product1.setStockQuantity(10);
         product1.setImgPath("/images/product1.jpg");
-        //   productRepository.save(product1);
 
         product2 = new Product();
         product2.setTitle("Another Product");
@@ -43,7 +42,6 @@ class ProductRepositoryTest extends SpringBootPostgreSQLBase{
         product2.setPrice(new BigDecimal("50.00"));
         product2.setStockQuantity(5);
         product2.setImgPath("/images/product2.jpg");
-        //    productRepository.save(product2);
 
         product3 = new Product();
         product3.setTitle("Low Stock Product");
@@ -51,7 +49,9 @@ class ProductRepositoryTest extends SpringBootPostgreSQLBase{
         product3.setPrice(new BigDecimal("10.00"));
         product3.setStockQuantity(0);
         product3.setImgPath("/images/product3.jpg");
-        //   productRepository.save(product3);
+
+        productRepository.deleteAll().block();
+
     }
 
     @Test
@@ -76,7 +76,7 @@ class ProductRepositoryTest extends SpringBootPostgreSQLBase{
     @Test
     void findByTitleContainingOrDescriptionContainingIgnoreCaseAndStockQuantityGreaterThan_ShouldReturnMatchingProducts() {
         Pageable pageable = PageRequest.of(0, 10, Sort.by(TITLE).ascending());
-        String searchTerm = "amazing";
+        String searchTerm = "Another";
         var matchingProducts = productRepository.saveAll(List.of(product1, product2, product3))
                 .thenMany(productRepository.findByTitleContainingOrDescriptionContainingIgnoreCaseAndStockQuantityGreaterThan(searchTerm, searchTerm, 0, pageable))
                 .toIterable();
@@ -87,44 +87,23 @@ class ProductRepositoryTest extends SpringBootPostgreSQLBase{
                 .withFailMessage("Их 1")
                 .hasSize(1)
                 .last()
-                .withFailMessage("Первый продукт: " + product1.getTitle())
+                .withFailMessage("Первый продукт: " + product2.getTitle())
                 .extracting(Product::getTitle)
-                .isEqualTo(product1.getTitle());
+                .isEqualTo(product2.getTitle());
     }
 
 
-    /*@Test
+    @Test
     void findImgPathById_ShouldReturnCorrectPath() {
-        String imgPath = productRepository.findImgPathById(product1.getId());
-        assertThat(imgPath).isEqualTo("/images/product1.jpg");
+        String actualImagePath = productRepository.save(product1)
+                .map(Product::getId) // Получаем productId
+                .flatMap(productRepository::findImgPathById)
+                .block();
+
+        assertNotNull(actualImagePath);
+        assertThat(actualImagePath)
+                .withFailMessage("Файл изображения должен быть")
+                .isEqualTo(product1.getImgPath());
     }
 
-
- /*   @Test
-    void findByTitleContainingOrDescriptionContainingIgnoreCaseAndStockQuantityGreaterThan_ShouldReturnMatchingProducts() {
-        Pageable pageable = PageRequest.of(0, 10);
-        String searchTerm = "product";
-        Page<Product> products = productRepository.findByTitleContainingOrDescriptionContainingIgnoreCaseAndStockQuantityGreaterThan(
-                searchTerm, searchTerm, 0, pageable);
-
-        assertThat(products.getTotalElements()).isEqualTo(2); // product1 and product2
-        assertThat(products.getContent()).contains(product1, product2);
-        assertThat(products.getContent()).doesNotContain(product3);
-
-        searchTerm = "amazing";
-        products = productRepository.findByTitleContainingOrDescriptionContainingIgnoreCaseAndStockQuantityGreaterThan(
-                searchTerm, searchTerm, 0, pageable);
-
-        assertThat(products.getTotalElements()).isEqualTo(1); //product1
-        assertThat(products.getContent()).contains(product1);
-        assertThat(products.getContent()).doesNotContain(product2, product3);
-
-        searchTerm = "low stock";
-        products = productRepository.findByTitleContainingOrDescriptionContainingIgnoreCaseAndStockQuantityGreaterThan(
-                searchTerm, searchTerm, 0, pageable);
-
-        assertThat(products.getTotalElements()).isEqualTo(0); //None because stock quantity is 0.
-    }
-
-     */
 }
