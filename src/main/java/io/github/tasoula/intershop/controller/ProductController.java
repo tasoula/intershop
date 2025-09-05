@@ -32,36 +32,6 @@ public class ProductController {
         return "redirect:/catalog/items";
     }
 
- /*   @GetMapping("items")
-    public String showItems(@UserId UUID userId,
-                            @RequestParam(name = "search", required = false) String search,
-                            @RequestParam(name = "sort", required = false, defaultValue = "NO") String sort,
-                            @RequestParam(name = "pageSize", required = false, defaultValue = "10") Integer pageSize,
-                            @RequestParam(name = "pageNumber", required = false, defaultValue = "0") Integer pageNumber,
-                            Model model) {
-
-        model.addAttribute("search", search);
-        model.addAttribute("sort", sort);
-
-        if (pageSize <= 0) pageSize = 10;
-        if (pageNumber < 0) pageNumber = 0;
-
-        Sort sortObj = switch (sort) {
-            case "ALPHA" -> Sort.by(TITLE);
-            case "PRICE" -> Sort.by(PRICE);
-            default -> Sort.unsorted();
-        };
-
-        Pageable pageable = PageRequest.of(pageNumber, pageSize, sortObj.ascending());
-        Page<ProductDto> productPage = service.findAll(userId, search, pageable);
-        model.addAttribute("paging", productPage);
-        model.addAttribute("items", productPage.getContent());
-
-        return "catalog.html";
-    }
-
-  */
-
     @GetMapping("items")
     public Mono<String> showItems(
             @UserId UUID userId,  // Предполагаем, что @UserId - это кастомная аннотация для извлечения ID пользователя
@@ -94,15 +64,19 @@ public class ProductController {
                 .thenReturn("catalog.html"); // Возвращаем имя шаблона, после добавления атрибутов в модель
     }
 
-    /*
+
 
     @GetMapping("items/{id}")
-    public String showItemById(@UserId UUID userId, @PathVariable("id") UUID id, Model model) {
-        model.addAttribute("item", service.findById(userId, id));
-        return "item.html";
+    public Mono<String> showItemById(@UserId UUID userId, @PathVariable("id") UUID id, Model model) {
+        return service.findById(userId, id)
+                        .doOnNext(productDto -> {
+                            model.addAttribute("item", productDto);
+                        })
+                        .thenReturn("item.html");
+
     }
 
-
+ /*
     @GetMapping("/products/new") // URL для отображения формы
     public String newProductForm(Model model) {
         // Можно добавить атрибуты в модель, если они необходимы (например, для ошибок)

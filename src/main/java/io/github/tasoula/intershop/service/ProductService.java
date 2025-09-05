@@ -51,28 +51,22 @@ public class ProductService {
                 .map(cartQuantity -> new ProductDto(product, cartQuantity)); // Преобразуем в ProductDto
     }
 
-/*
-    public Page<ProductDto> findAll(UUID userId, String search, Pageable pageable) {
-       Page<Product> productPage = (search == null || search.isEmpty())
-                ? productRepository.findAllByStockQuantityGreaterThan(0, pageable)
-                : productRepository.findByTitleContainingOrDescriptionContainingIgnoreCaseAndStockQuantityGreaterThan(search.toLowerCase(), search.toLowerCase(), 0, pageable);
 
-        List<ProductDto> productCatalogItemDtos = productPage.getContent().stream()
-                .map(product -> mapToDto(userId, product))
-                .collect(Collectors.toList());
-
-        return new PageImpl<>(productCatalogItemDtos, pageable, productPage.getTotalElements());
-    }
-
-
-
-    public ProductDto findById(UUID userId, UUID productId) throws ResourceNotFoundException {
+    /*  public ProductDto findById1(UUID userId, UUID productId) throws ResourceNotFoundException {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + productId));
         return mapToDto(userId, product);
     }
 
-    private ProductDto mapToDto(UUID userId, Product product) {
+     */
+
+    public Mono<ProductDto> findById(UUID userId, UUID productId) {
+        return productRepository.findById(productId)
+                .switchIfEmpty(Mono.error(new ResourceNotFoundException("Product not found with id: " + productId)))
+                .flatMap(product -> mapToDto(userId, product)); // Используем flatMap для преобразования Mono<Product> в Mono<ProductDto>
+    }
+
+ /*   private ProductDto mapToDto(UUID userId, Product product) {
         return new ProductDto(product, cartService.getCartQuantity(userId, product.getId()));
     }
 
