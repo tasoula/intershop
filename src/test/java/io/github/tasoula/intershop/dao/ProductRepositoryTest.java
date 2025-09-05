@@ -4,15 +4,12 @@ import io.github.tasoula.intershop.model.Product;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import reactor.core.publisher.Flux;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.UUID;
 
 import static io.github.tasoula.intershop.controller.ProductController.TITLE;
 import static org.assertj.core.api.Assertions.assertThat;
