@@ -8,5 +8,3 @@ spring:
     username: ${INTERSHOP_DB_USERNAME}
     password: ${INTERSHOP_DB_PASSWORD}
 
-  liquibase:
-    contexts: 'test'

@@ -2,15 +2,19 @@ spring:
     application:
         name: Internet Shop
 
+    sql:
+        init:
+            mode: always
+
     r2dbc:
         url: r2dbc:postgresql://localhost:5432/intershop-db # INTERSHOP_DB_URL = localhost:5432/your_database_name
         username: postgres
         password: postgres
 
-    flyway:
-        locations: classpath:/db/migration  # Путь к вашим SQL-скриптам Flyway
-        enabled: true  # Включить Flyway
-        baseline-on-migrate: true # Создать baseline таблицу если её нет при миграции
+        pool:
+            max-size: 20
+            initial-size: 10
+            validation-query: SELECT 1 # Проверка доступности соединения
 
 upload.images.dir: ${UPLOAD_IMAGES_DIR:/app/images}
 
@@ -22,5 +26,8 @@ cookie:
     max:
         age:
             seconds: 86400
-
+logging:
+    level:
+        org.springframework.r2dbc.core.DefaultDatabaseClient: DEBUG # заодно включим логирование SQL-запросов
+        io.r2dbc: DEBUG # и добавим больше деталей (не включать в настоящем приложении)
 
