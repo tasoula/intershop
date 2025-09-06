@@ -12,6 +12,7 @@ import reactor.core.publisher.Mono;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -43,42 +44,19 @@ public class ImageService {
                 });
     }
 
- /*   public void saveToDisc(MultipartFile file, String imagePath) {
-        if (uploadDir == null) {
-            throw new IllegalStateException("Требуется задать каталог для сохранения изображений поста");
-        }
-        File dir = new File(uploadDir);
-        if (!dir.exists()) {
-            dir.mkdirs();
-        }
-
-        // 2. Сохранить файл на диск
-        Path filePath = Paths.get(uploadDir, imagePath);
-        try {
-            Files.copy(file.getInputStream(), filePath);
-        }
-        catch (IOException e){
-            log.error("Не удалось загрузить изобраение: {}", e.getMessage(), e);
-        }
-    }
-*/
     public Mono<Void> saveToDisc(FilePart filePart, String imagePath) { // Используем FilePart для WebFlux
-        if (uploadDir == null) {
-            return Mono.error(new IllegalStateException("Требуется задать каталог для сохранения изображений поста"));
-        }
-
-        File dir = new File(uploadDir);
-        if (!dir.exists()) {
-            if (!dir.mkdirs()) {
-                return Mono.error(new IllegalStateException("Не удалось создать каталог для сохранения изображений"));
-            }
-        }
-
-        Path filePath = Paths.get(uploadDir, imagePath);
-
-        return filePart.transferTo(filePath) // Используем transferTo для асинхронной записи
-                .doOnError(e -> log.error("Не удалось загрузить изображение: {}", e.getMessage(), e))
-                .then(); // Возвращаем Mono<Void> для асинхронности
+        return Mono.justOrEmpty(uploadDir)
+                .switchIfEmpty(Mono.error(new IllegalStateException("Требуется задать каталог для сохранения изображений поста")))
+                .map(uploadDir -> new File(uploadDir))
+                .doOnNext(dir -> {
+                    if (!dir.exists() && !dir.mkdirs()) {
+                        throw new IllegalStateException("Не удалось создать каталог для сохранения изображений");
+                    }
+                })
+                .map(dir -> Paths.get(uploadDir, imagePath))
+                .flatMap(filePath -> filePart.transferTo(filePath)
+                        .doOnError(e -> log.error("Не удалось загрузить изображение: {}", e.getMessage(), e)))
+                .then();
     }
 }
 

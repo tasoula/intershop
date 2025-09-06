@@ -7,6 +7,7 @@ import io.github.tasoula.intershop.model.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -21,15 +22,14 @@ import java.util.stream.Collectors;
 public class ProductService {
 
     private final ProductRepository productRepository;
-    /*   private final CartService cartService;
+    //   private final CartService cartService;
 
     private final ImageService imageService;
 
 
-     */
-
-    public ProductService(ProductRepository repository) {
+    public ProductService(ProductRepository repository, ImageService imageService) {
         this.productRepository = repository;
+        this.imageService = imageService;
     }
 
     public Mono<Page<ProductDto>> findAll(UUID userId, String search, Pageable pageable) {
@@ -52,44 +52,55 @@ public class ProductService {
     }
 
 
-    /*  public ProductDto findById1(UUID userId, UUID productId) throws ResourceNotFoundException {
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + productId));
-        return mapToDto(userId, product);
-    }
-
-     */
-
     public Mono<ProductDto> findById(UUID userId, UUID productId) {
         return productRepository.findById(productId)
                 .switchIfEmpty(Mono.error(new ResourceNotFoundException("Product not found with id: " + productId)))
                 .flatMap(product -> mapToDto(userId, product)); // Используем flatMap для преобразования Mono<Product> в Mono<ProductDto>
     }
 
- /*   private ProductDto mapToDto(UUID userId, Product product) {
-        return new ProductDto(product, cartService.getCartQuantity(userId, product.getId()));
-    }
+    /*
 
+       @Transactional
+       public void createProduct(String title,
+                                 String description,
+                                 MultipartFile image,
+                                 BigDecimal price,
+                                 int stockQuantity) {
 
-    @Transactional
-    public void createProduct(String title,
-                              String description,
-                              MultipartFile image,
-                              BigDecimal price,
-                              int stockQuantity) {
+           Product product = new Product();
+           product.setTitle(title);
+           product.setDescription(description);
+           product.setPrice(price);
+           product.setStockQuantity(stockQuantity);
 
-        Product product = new Product();
+           String filename = UUID.randomUUID() + "_" + image.getOriginalFilename();
+           product.setImgPath(filename);
+
+           productRepository.save(product);
+           imageService.saveToDisc(image, filename);
+       }
+
+    */
+   // @Transactional
+    public Mono<Void> createProduct(String title,
+                                    String description,
+                                    FilePart image, // Используем FilePart для WebFlux
+                                    BigDecimal price,
+                                    int stockQuantity) {
+     /*   Product product = new Product();
         product.setTitle(title);
         product.setDescription(description);
         product.setPrice(price);
         product.setStockQuantity(stockQuantity);
-
-        String filename = UUID.randomUUID() + "_" + image.getOriginalFilename();
+        String filename = UUID.randomUUID() + "_" + image.filename();
         product.setImgPath(filename);
 
-        productRepository.save(product);
-        imageService.saveToDisc(image, filename);
-    }
+        return productRepository.save(product)
+                .flatMap(savedProduct -> imageService.saveToDisc(image, product.getImgPath())
+                        .thenReturn(savedProduct))
+                .then();
 
- */
+      */
+        return Mono.empty();
+    }
 }
