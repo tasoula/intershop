@@ -26,11 +26,12 @@ services:
       INTERSHOP_DB_USERNAME: ${INTERSHOP_DB_USERNAME}
       INTERSHOP_DB_PASSWORD: ${INTERSHOP_DB_PASSWORD}
       COOKIE_MAX_AGE_SECONDS: 86400
+      UPLOAD_IMAGES_DIR: /app/images # путь в контейнере
 
     networks:
       - mynetwork
     volumes:
-      - upload_data:/app/images  # Если нужно сохранять загруженные изображения
+      - ./${UPLOAD_IMAGES_DIR}:/app/images # путь монтирования тома должен соответствовать UPLOAD_IMAGES_DIR в контейнере
 volumes:
   db_data:
   upload_data:

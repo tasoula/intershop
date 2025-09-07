@@ -1,39 +1,35 @@
 package io.github.tasoula.intershop.model;
 
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.Check;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
-@Entity
 @Table(name = "t_order_items")
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Setter
 public class OrderItem {
-
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne
-    @JoinColumn(name = "order_id", nullable = false)
-    private Order order;
+    @Column("order_id")
+    private UUID orderId;
 
-    @ManyToOne
-    @JoinColumn(name = "product_id", nullable = false)
-    private Product product;
+    @Column("product_id")
+    private UUID productId;
 
-    @Column(nullable = false, columnDefinition = "integer default 0")
     private Integer quantity;
 
-    @Column(name = "price_at_time_of_order", nullable = false)
-    @Check(constraints = "value > 0")
+    @Column("price_at_time_of_order")
     private BigDecimal priceAtTimeOfOrder;
+
+    //todo: добавить version
 }

@@ -16,12 +16,15 @@ import java.util.UUID;
 @Service
 public class OrderService {
 
-    private final OrderRepository orderRepository;
+/*     private final OrderRepository orderRepository;
     private final CartItemRepository cartItemRepository;
 
-    public OrderService(CartItemRepository cartItemRepository, OrderRepository orderRepository) {
+   private final EntityManager entityManager;
+
+    public OrderService(CartItemRepository cartItemRepository, OrderRepository orderRepository, EntityManager entityManager) {
         this.cartItemRepository = cartItemRepository;
         this.orderRepository = orderRepository;
+        this.entityManager = entityManager;
     }
 
     @Transactional
@@ -37,7 +40,7 @@ public class OrderService {
             return Optional.empty();
 
         Order order = new Order();
-        order.setUser(new User(userId));
+        order.setUser(entityManager.getReference(User.class, userId));
 
         List<OrderItem> orderItems = cartItems.stream()
                 .map(cartItem -> {
@@ -100,6 +103,8 @@ public class OrderService {
                 totalAmount
         );
     }
+
+ */
 }
 
 

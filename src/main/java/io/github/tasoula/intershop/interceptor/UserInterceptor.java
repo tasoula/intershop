@@ -3,21 +3,20 @@ package io.github.tasoula.intershop.interceptor;
 import io.github.tasoula.intershop.service.UserService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.web.servlet.HandlerInterceptor;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
 
 @Component
-public class UserInterceptor implements HandlerInterceptor {
+public class UserInterceptor //implements HandlerInterceptor
+{
 
+    @Value("${cookie.user.id.name}")
+    private String cookieName;
     @Value("${cookie.max.age.seconds}")
     private int coockieMaxAge;
 
-    private final UserService service;
+ /*   private final UserService service;
 
     public UserInterceptor(UserService service) {
         this.service = service;
@@ -26,14 +25,14 @@ public class UserInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         Optional<Cookie> userIdCookie = Arrays.stream(request.getCookies() == null ? new Cookie[0] : request.getCookies())
-                .filter(cookie -> CookieConstants.USER_ID_COOKIE_NAME.equals(cookie.getName()))
+                .filter(cookie -> cookieName.equals(cookie.getName()))
                 .findFirst();
 
         String userId = userIdCookie.map(Cookie::getValue).orElse(null);
 
         if (userId == null) {
             userId = service.createUser().toString();
-            Cookie cookie = new Cookie(CookieConstants.USER_ID_COOKIE_NAME, userId);
+            Cookie cookie = new Cookie(cookieName, userId);
             cookie.setMaxAge(coockieMaxAge);
             cookie.setPath("/");
 
@@ -53,12 +52,15 @@ public class UserInterceptor implements HandlerInterceptor {
 • Использовать механизм обновления токенов (refresh tokens). (когда будет spring sequrity)
              */
 
-            response.addCookie(cookie);
+ /*           response.addCookie(cookie);
         }
 
         // Добавляем ID пользователя в атрибуты запроса, чтобы он был доступен в контроллерах
-        request.setAttribute(CookieConstants.USER_ID_COOKIE_NAME, userId);
+        request.setAttribute(cookieName, userId);
 
         return true; // Продолжаем обработку запроса
     }
+
+  */
+
 }

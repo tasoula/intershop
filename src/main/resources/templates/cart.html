@@ -36,7 +36,7 @@
                         <td style="width: 300px; padding-left: 20px; display: flex; flex-direction: column; justify-content: space-between;">
                             <div><b th:text="${item.getTitle()}"></b></div>
                             <form class="cart-form" style="padding-top: 20px;">
-                                <button type="button" name="action" value="delete">&cross;</button>
+                                <button type="button" name="action" value="DELETE">&cross;</button>
                             </form>
                         </td>
                         <td style="padding-left: 20px; vertical-align: top;">
@@ -44,9 +44,9 @@
                         </td>
                         <td style="vertical-align: top;">
                             <form class="cart-form" style="padding-left: 20px;">
-                                <button type="button" class="minus quantity-button" name="action" value="minus" th:disabled="${item.getStockQuantity() <= 0}">-</button>
+                                <button type="button" class="minus quantity-button" name="action" value="MINUS" th:disabled="${item.getStockQuantity() <= 0}">-</button>
                                 <span class="cart-quantity" th:text="${item.getQuantity()}"></span>
-                                <button type="button" class="plus quantity-button" name="action" value="plus" th:disabled="${item.getStockQuantity() <= item.getQuantity()}">+</button>
+                                <button type="button" class="plus quantity-button" name="action" value="PLUS" th:disabled="${item.getStockQuantity() <= item.getQuantity()}">+</button>
                                 <div class="stock-remaining" th:if="${item.getStockQuantity() < item.getQuantity()}">
                                     Осталось <span class="stock-quantity" th:text="${item.getStockQuantity()}"></span> шт.
                                 </div>

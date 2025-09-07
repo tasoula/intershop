@@ -13,7 +13,7 @@ import java.util.NoSuchElementException;
 
 @ControllerAdvice
 public class ExceptionController {
-
+/*
     // Обработка 404
     @ExceptionHandler(NoSuchElementException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
@@ -42,4 +42,6 @@ public class ExceptionController {
         return "exceptions/oops.html"; // что-то пошло не так
     }
 
+
+ */
 }

@@ -6,7 +6,7 @@
 </head>
 <body>
 <a th:href="@{/catalog/products}" style="float:right;">
-    <b>К списку продуктов &cudarrr;</b>
+    <b>К списку товаров &cudarrr;</b>
 </a>
 
 <h1>Добавить новый продукт</h1>
@@ -16,13 +16,13 @@
         <tr>
             <td>
                 <h3>Наименование</h3>
-                <input type="text" style="width: 100%;" name="title" id="title" required>
+                <input type="text" style="width: 100%;" name="productDto.setTitle" id="title" required> <!-- Используйте productDto.title -->
             </td>
         </tr>
         <tr>
             <td>
                 <h3>Описание</h3>
-                <textarea rows="5" style="width: 100%;" name="description" id="description"></textarea>
+                <textarea rows="5" style="width: 100%;" name="productDto.setDescription" id="description"></textarea> <!-- Используйте productDto.description -->
             </td>
         </tr>
         <tr>
@@ -34,13 +34,13 @@
         <tr>
             <td>
                 <h3>Цена</h3>
-                <input type="number" step="0.01" style="width: 100%;" name="price" id="price" required>
+                <input type="number" step="0.01" style="width: 100%;" name="productDto.setPrice" id="price" required> <!-- Используйте productDto.price -->
             </td>
         </tr>
         <tr>
             <td>
                 <h3>Количество на складе</h3>
-                <input type="number" style="width: 100%;" name="stockQuantity" id="stockQuantity" required>
+                <input type="number" style="width: 100%;" name="productDto.setStockQuantity" id="stockQuantity" required> <!-- Используйте productDto.stockQuantity -->
             </td>
         </tr>
         <tr>

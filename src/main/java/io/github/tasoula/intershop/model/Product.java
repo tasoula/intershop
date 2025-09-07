@@ -1,10 +1,12 @@
 package io.github.tasoula.intershop.model;
 
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 
 import java.math.BigDecimal;
@@ -13,7 +15,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-@Entity
+
 @Table(name = "t_products")
 @NoArgsConstructor
 @AllArgsConstructor
@@ -21,25 +23,20 @@ import java.util.stream.Collectors;
 @Setter
 public class Product {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false)
     private String title;
 
-    @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "image_path", unique = true)
+    @Column("image_path")
     private String imgPath;
 
-    @Column(nullable = false)
     private BigDecimal price;
 
-    @Column(name = "stock_quantity", nullable = false)
+    @Column("stock_quantity")
     private int stockQuantity;
 
-    public Product(UUID productId) {
-        this.id = productId;
-    }
+    //todo: добавить version
+
 }

@@ -2,17 +2,32 @@ spring:
     application:
         name: Internet Shop
 
-    datasource:
-        driver-class-name: org.postgresql.Driver
+    sql:
+        init:
+            mode: always
 
-        url: ${INTERSHOP_DB_URL}
-        username: ${INTERSHOP_DB_USERNAME}
-        password: ${INTERSHOP_DB_PASSWORD}
+    r2dbc:
+        url: r2dbc:postgresql://localhost:5432/intershop-db # INTERSHOP_DB_URL = localhost:5432/your_database_name
+        username: postgres
+        password: postgres
 
-    liquibase:
-        change-log: classpath:/db/changelog/db.changelog-master.xml
+        pool:
+            max-size: 20
+            initial-size: 10
+            validation-query: SELECT 1 # Проверка доступности соединения
 
-upload.images.dir: images
-cookie.max.age.seconds: 86400  # 1 day in seconds (60 × 60 × 24)
+upload.images.dir: ${UPLOAD_IMAGES_DIR:/app/images}
 
+cookie:
+    user:
+        id:
+            name: userId
+
+    max:
+        age:
+            seconds: 86400
+logging:
+    level:
+        org.springframework.r2dbc.core.DefaultDatabaseClient: DEBUG # заодно включим логирование SQL-запросов
+    #    io.r2dbc: DEBUG # и добавим больше деталей (не включать в настоящем приложении)
 
