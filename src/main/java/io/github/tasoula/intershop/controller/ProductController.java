@@ -1,25 +1,29 @@
 package io.github.tasoula.intershop.controller;
 
-import io.github.tasoula.intershop.annotations.UserId;
 import io.github.tasoula.intershop.dto.ProductDto;
 import io.github.tasoula.intershop.service.ProductService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.*;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
+import static io.github.tasoula.intershop.interceptor.CoockieConst.USER_ID;
+
 @Controller
 @RequestMapping("/catalog")
 public class ProductController {
+
+
+    @Value("${cookie.user.id.name}")
+    private String cookieName;
 
     public static final String TITLE = "title";
     public static final String PRICE = "price";
@@ -37,7 +41,7 @@ public class ProductController {
 
     @GetMapping("items")
     public Mono<String> showItems(
-            @UserId UUID userId,  // Предполагаем, что @UserId - это кастомная аннотация для извлечения ID пользователя
+            @CookieValue(USER_ID) UUID userId,  // Предполагаем, что @UserId - это кастомная аннотация для извлечения ID пользователя
             @RequestParam(name = "search", required = false) String search,
             @RequestParam(name = "sort", required = false, defaultValue = "NO") String sort,
             @RequestParam(name = "pageSize", required = false, defaultValue = "10") Integer pageSize,
@@ -67,9 +71,8 @@ public class ProductController {
                 .thenReturn("catalog.html"); // Возвращаем имя шаблона, после добавления атрибутов в модель
     }
 
-
     @GetMapping("items/{id}")
-    public Mono<String> showItemById(@UserId UUID userId, @PathVariable("id") UUID id, Model model) {
+    public Mono<String> showItemById(@CookieValue(USER_ID) UUID userId, @PathVariable("id") UUID id, Model model) {
         return service.findById(userId, id)
                 .doOnNext(productDto -> {
                     model.addAttribute("item", productDto);
@@ -77,7 +80,6 @@ public class ProductController {
                 .thenReturn("item.html");
 
     }
-
 
     @GetMapping("/products/new")
     public Mono<String> newProductForm(Model model) {
@@ -101,14 +103,5 @@ public class ProductController {
                     System.err.println("Error during product creation: " + e.getMessage());
                     return Mono.just("redirect:/catalog/items?error=true"); // Или другой вид обработки ошибки
                 });
-
-    /*    return image.flatMap(filePart -> {
-                    return service.createProduct(title, description, image, price, stockQuantity)
-                            .thenReturn("redirect:/catalog/items"); //  Возвращаем строку для редиректа
-                })
-                .onErrorResume(e -> {
-                    System.err.println("Error during product creation: " + e.getMessage());
-                    return Mono.just("redirect:/catalog/items?error=true"); // Или другой вид обработки ошибки
-                });*/
     }
 }
