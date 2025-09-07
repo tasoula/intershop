@@ -9,14 +9,11 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class ProductService {
@@ -58,36 +55,12 @@ public class ProductService {
                 .flatMap(product -> mapToDto(userId, product)); // Используем flatMap для преобразования Mono<Product> в Mono<ProductDto>
     }
 
-    /*
-
-       @Transactional
-       public void createProduct(String title,
-                                 String description,
-                                 MultipartFile image,
-                                 BigDecimal price,
-                                 int stockQuantity) {
-
-           Product product = new Product();
-           product.setTitle(title);
-           product.setDescription(description);
-           product.setPrice(price);
-           product.setStockQuantity(stockQuantity);
-
-           String filename = UUID.randomUUID() + "_" + image.getOriginalFilename();
-           product.setImgPath(filename);
-
-           productRepository.save(product);
-           imageService.saveToDisc(image, filename);
-       }
-
-    */
-   // @Transactional
     public Mono<Void> createProduct(String title,
                                     String description,
                                     FilePart image, // Используем FilePart для WebFlux
                                     BigDecimal price,
                                     int stockQuantity) {
-     /*   Product product = new Product();
+        Product product = new Product();
         product.setTitle(title);
         product.setDescription(description);
         product.setPrice(price);
@@ -99,8 +72,5 @@ public class ProductService {
                 .flatMap(savedProduct -> imageService.saveToDisc(image, product.getImgPath())
                         .thenReturn(savedProduct))
                 .then();
-
-      */
-        return Mono.empty();
     }
 }
