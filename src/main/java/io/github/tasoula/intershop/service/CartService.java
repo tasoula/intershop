@@ -7,8 +7,13 @@ import io.github.tasoula.intershop.exceptions.ResourceNotFoundException;
 import io.github.tasoula.intershop.model.CartItem;
 import io.github.tasoula.intershop.model.Product;
 import io.github.tasoula.intershop.model.User;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.reactive.TransactionalOperator;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -18,72 +23,70 @@ import java.util.stream.Collectors;
 @Service
 public class CartService {
 
-    /*
+
     private final CartItemRepository cartItemRepository;
-    private final EntityManager entityManager;
+    private final ProductRepository productRepository;
 
+//   @Autowired
+ //   private TransactionalOperator transactionalOperator;
 
-    public CartService(CartItemRepository cartItemRepository, EntityManager entityManager) {
+    public CartService(CartItemRepository cartItemRepository, ProductRepository productRepository) {
         this.cartItemRepository = cartItemRepository;
-        this.entityManager = entityManager;
+        this.productRepository = productRepository;
     }
 
- /*   public List<ProductDto> findByUserId(UUID userId) {
+    public Flux<ProductDto> findByUserId(UUID userId) {
         return cartItemRepository.findByUserIdOrderByCreatedAtDesc(userId)
-                .stream()
-                .map(this::convertToProductDto)
-                .collect(Collectors.toList());
+                .flatMap(cartItem -> productRepository.findById(cartItem.getProductId())
+                        .map(product -> new ProductDto(product, cartItem.getQuantity())));
     }
 
-    private ProductDto convertToProductDto(CartItem item) {
-        return new ProductDto(item.getProduct(), item.getQuantity());
-    }
 
-    @Transactional
-    public int changeProductQuantityInCart(UUID userId, UUID productId, int changeQuantity) {
-
-        Product product = entityManager.getReference(Product.class, productId);
-
-        CartItem cartItem = cartItemRepository.findByUserIdAndProductId(userId, productId)
-                .orElseGet(() -> new CartItem(entityManager.getReference(User.class, userId), product));
-
-        int newQuantity = cartItem.getQuantity() + changeQuantity;
-
-        if (newQuantity <= 0) {
-            cartItemRepository.delete(cartItem);
-            return 0;
-        }
-
-        newQuantity = Math.min(newQuantity, product.getStockQuantity());
-
-        cartItem.setQuantity(newQuantity);
-        cartItemRepository.save(cartItem);
-
-        return cartItem.getQuantity();
-    }
-
-    @Transactional
-    public void deleteCartItem(UUID userId, UUID productId) {
-        cartItemRepository.deleteByUserIdAndProductId(userId, productId);
-    }
-
-    public BigDecimal calculateTotalPriceByUserId(UUID userId) {
-        BigDecimal result = cartItemRepository.calculateTotalPriceByUserId(userId);
-        return (result != null) ? result : BigDecimal.ZERO;
-    }
-
-    public boolean isEmpty(UUID userId) {
-        return !cartItemRepository.existsByUserId(userId);
-    }
-
-    public int getCartQuantity(UUID userId, UUID productId) {
+    public Mono<Integer> getCartQuantity(UUID userId, UUID productId) {
         if (userId == null) {
-            return 0;
+            return Mono.just(0);
         }
         return cartItemRepository.findByUserIdAndProductId(userId, productId)
                 .map(CartItem::getQuantity)
-                .orElse(0); // Если нет записи в корзине, то 0
+                .defaultIfEmpty(0); // Если нет записи в корзине, то 0
     }
 
-  */
+   //    @Transactional
+    public Mono<Integer> changeProductQuantityInCart(UUID userId, UUID productId, int changeQuantity) {
+        System.out.println("change quantity");
+        return  //transactionalOperator.execute(status ->
+                productRepository.findById(productId)
+                .switchIfEmpty(Mono.error(() -> new ResourceNotFoundException("Product with id " + productId + " not found.")))
+                .flatMap(product -> cartItemRepository.findByUserIdAndProductId(userId, productId)
+                        .switchIfEmpty(Mono.just(new CartItem(userId, productId))) // Создаем новый CartItem с quantity = 0
+                        .flatMap(cartItem -> {
+                            int newQuantity = cartItem.getQuantity() + changeQuantity;
+
+                            if (newQuantity <= 0) {
+                                return cartItemRepository.delete(cartItem)
+                                        .then(Mono.just(0)); // Возвращаем 0, так как элемент удален
+                            }
+
+                            newQuantity = Math.min(newQuantity, product.getStockQuantity());
+                            cartItem.setQuantity(newQuantity);
+                            return cartItemRepository.save(cartItem)
+                                    .map(CartItem::getQuantity); // Возвращаем новую quantity
+                        }));//);.next();
+    }
+
+    @Transactional
+    public Mono<Void> deleteCartItem(UUID userId, UUID productId) {
+        return cartItemRepository.deleteByUserIdAndProductId(userId, productId);
+    }
+
+    public Mono<BigDecimal> calculateTotalPriceByUserId(UUID userId) {
+     //   return cartItemRepository.calculateTotalPriceByUserId(userId)
+      //          .switchIfEmpty(Mono.just(BigDecimal.ZERO));
+        return Mono.just(BigDecimal.ZERO);
+    }
+
+    public Mono<Boolean> isEmpty(UUID userId) {
+        return cartItemRepository.existsByUserId(userId).map(exists -> !exists);
+    }
+
 }

@@ -19,13 +19,14 @@ import java.util.*;
 public class ProductService {
 
     private final ProductRepository productRepository;
-    //   private final CartService cartService;
+    private final CartService cartService;
 
     private final ImageService imageService;
 
 
-    public ProductService(ProductRepository repository, ImageService imageService) {
+    public ProductService(ProductRepository repository, CartService cartService, ImageService imageService) {
         this.productRepository = repository;
+        this.cartService = cartService;
         this.imageService = imageService;
     }
 
@@ -44,7 +45,7 @@ public class ProductService {
 
     private Mono<ProductDto> mapToDto(UUID userId, Product product) {
         // Асинхронно получаем количество товара в корзине.  cartService.getCartQuantity возвращает Mono<Integer>
-        return Mono.just(0) // todo cartService.getCartQuantity(userId, product.getId())
+        return  cartService.getCartQuantity(userId, product.getId())
                 .map(cartQuantity -> new ProductDto(product, cartQuantity)); // Преобразуем в ProductDto
     }
 
