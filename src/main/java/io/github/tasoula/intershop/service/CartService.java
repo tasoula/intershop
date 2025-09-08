@@ -63,7 +63,7 @@ public class CartService {
                             int newQuantity = cartItem.getQuantity() + changeQuantity;
 
                             if (newQuantity <= 0) {
-                                return cartItemRepository.delete(cartItem)
+                                return cartItemRepository.deleteByUserIdAndProductId(userId, productId)
                                         .then(Mono.just(0)); // Возвращаем 0, так как элемент удален
                             }
 
@@ -74,7 +74,7 @@ public class CartService {
                         }));//);.next();
     }
 
-    @Transactional
+    //@Transactional
     public Mono<Void> deleteCartItem(UUID userId, UUID productId) {
         return cartItemRepository.deleteByUserIdAndProductId(userId, productId);
     }
