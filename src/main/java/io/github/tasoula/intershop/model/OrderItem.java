@@ -30,6 +30,4 @@ public class OrderItem {
 
     @Column("price_at_time_of_order")
     private BigDecimal priceAtTimeOfOrder;
-
-    //todo: добавить version
 }

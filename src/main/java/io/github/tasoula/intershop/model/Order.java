@@ -24,10 +24,9 @@ public class Order {
     private UUID id;
 
     @Column("user_id")
-    private User user;
+    private UUID userId;
 
-    @CreatedDate //  Аннотация для автоматического заполнения поля при создании записи
-    // Убедитесь, что в вашей базе данных колонка created_at определена как TIMESTAMP или аналогичный тип, и что она не имеет значения по умолчанию, если вы используете @CreatedDate
+    @CreatedDate
     @Column("created_at")
     private Timestamp createdAt;
 
