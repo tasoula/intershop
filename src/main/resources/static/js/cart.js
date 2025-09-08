@@ -3,17 +3,20 @@ $(document).ready(function() {
     $('.cart-form button').click(function(event) {
         event.preventDefault();
 
-        var $button = $(this);
-        var $itemCard = $button.closest('.item-card');
-        var itemId = $itemCard.data('item-id');
+        var $button = $(this); // Сохраняем ссылку на кнопку
+        var $itemCard = $button.closest('.item-card'); // Находим item-card
+        var itemId = $button.closest('.item-card').data('item-id'); // Получаем item-id из атрибута data
         var action = $button.attr('value');
         var $quantitySpan = $button.siblings('span');
+
         var quantity = parseInt($quantitySpan.text());
-        var $addToCartButton = $button.siblings('.add-to-cart');
-        var $plusButton = $itemCard.find('button[value="PLUS"]'); //Уточняем селектор
-        var $minusButton = $itemCard.find('button[value="MINUS"]'); //Уточняем селектор
+
+        var $addToCartButton = $button.siblings('.add-to-cart'); // Кнопка "В корзину"
+        var $plusButton = $itemCard.find('.plus'); // Добавляем выборку кнопки plus
+        var $minusButton = $itemCard.find('.minus'); // Добавляем выборку кнопки minus
         var $itemImage = $itemCard.find('img');
-        var stockQuantity = parseInt($itemCard.data('stock-quantity'));
+
+        var stockQuantity = parseInt($button.closest('.item-card').data('stock-quantity'));
 
         $.ajax({
             url: '/cart/items/' + itemId + '?action=' + action,
@@ -32,6 +35,7 @@ $(document).ready(function() {
                 }
 
                 // Если количество стало равно нулю и действие было удалением, можно удалить элемент из корзины
+                if (newQuantity <= 0 && action === 'delete') {
                 if (newQuantity <= 0 && action === 'DELETE') {
                      $button.closest('tr').remove();
                 }
@@ -69,15 +73,15 @@ $(document).ready(function() {
     });
 
     // Инициализация видимости кнопки "В корзину" при загрузке страницы
-/*    $('.item-card').each(function() {
-        var $quantitySpan = $(this).find('span');
-        var $addToCartButton = $(this).find('.add-to-cart');
-        var quantity = parseInt($quantitySpan.text());
+ /*   $('.item-card').each(function() {
+        var $quantitySpan = $(this).find('span'); // span с количеством
+        var $addToCartButton = $(this).find('.add-to-cart'); // Кнопка "В корзину"
+        var quantity = parseInt($quantitySpan.text()); // Текущее количество
+
         if (quantity > 0) {
-            $addToCartButton.hide();
+            $addToCartButton.hide(); // Скрываем кнопку, если количество > 0
         } else {
-            $addToCartButton.show();
+            $addToCartButton.show(); // Показываем, если количество == 0
         }
-    });
-    */
+    });*/
 });

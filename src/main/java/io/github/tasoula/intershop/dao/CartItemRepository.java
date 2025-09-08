@@ -19,10 +19,11 @@ public interface CartItemRepository extends R2dbcRepository<CartItem, UUID> {
 
     Mono<Void> deleteByUserIdAndProductId(UUID userId, UUID productId);
 
-    //todo - переписать не работает
-    @Query("SELECT SUM(p.price * ci.quantity) " +
-            "FROM CartItem ci JOIN ci.product p " +
-            "WHERE ci.user.id = :userId")
+    @Query("""
+            SELECT SUM(p.price * ci.quantity) 
+            FROM t_cart_items ci JOIN t_products p ON ci.product_id = p.id 
+            WHERE ci.user_id = :userId
+            """)
     Mono<BigDecimal> calculateTotalPriceByUserId(@Param("userId") UUID userId);
 
     Mono<Boolean> existsByUserId(UUID userId);
