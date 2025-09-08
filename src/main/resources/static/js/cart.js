@@ -35,6 +35,7 @@ $(document).ready(function() {
                 }
 
                 // Если количество стало равно нулю и действие было удалением, можно удалить элемент из корзины
+                if (newQuantity <= 0 && action === 'delete') {
                 if (newQuantity <= 0 && action === 'DELETE') {
                      $button.closest('tr').remove();
                 }
@@ -72,7 +73,7 @@ $(document).ready(function() {
     });
 
     // Инициализация видимости кнопки "В корзину" при загрузке страницы
-    $('.item-card').each(function() {
+ /*   $('.item-card').each(function() {
         var $quantitySpan = $(this).find('span'); // span с количеством
         var $addToCartButton = $(this).find('.add-to-cart'); // Кнопка "В корзину"
         var quantity = parseInt($quantitySpan.text()); // Текущее количество
@@ -82,5 +83,5 @@ $(document).ready(function() {
         } else {
             $addToCartButton.show(); // Показываем, если количество == 0
         }
-    });
+    });*/
 });

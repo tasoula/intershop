@@ -21,7 +21,7 @@ upload.images.dir: ${UPLOAD_IMAGES_DIR:/app/images}
 cookie:
     user:
         id:
-            name: userId
+            name: userId #todo выпилить
 
     max:
         age:
