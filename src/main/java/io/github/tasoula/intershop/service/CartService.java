@@ -82,7 +82,6 @@ public class CartService {
     public Mono<BigDecimal> calculateTotalPriceByUserId(UUID userId) {
         return cartItemRepository.calculateTotalPriceByUserId(userId)
                 .switchIfEmpty(Mono.just(BigDecimal.ZERO));
-      //  return Mono.just(BigDecimal.ZERO);
     }
 
     public Mono<Boolean> isEmpty(UUID userId) {
