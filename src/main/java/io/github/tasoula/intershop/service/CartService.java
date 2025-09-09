@@ -23,12 +23,8 @@ import java.util.stream.Collectors;
 @Service
 public class CartService {
 
-
     private final CartItemRepository cartItemRepository;
     private final ProductRepository productRepository;
-
-//   @Autowired
- //   private TransactionalOperator transactionalOperator;
 
     public CartService(CartItemRepository cartItemRepository, ProductRepository productRepository) {
         this.cartItemRepository = cartItemRepository;
@@ -51,11 +47,9 @@ public class CartService {
                 .defaultIfEmpty(0); // Если нет записи в корзине, то 0
     }
 
-   //    @Transactional
+    @Transactional
     public Mono<Integer> changeProductQuantityInCart(UUID userId, UUID productId, int changeQuantity) {
-        System.out.println("change quantity");
-        return  //transactionalOperator.execute(status ->
-                productRepository.findById(productId)
+        return  productRepository.findById(productId)
                 .switchIfEmpty(Mono.error(() -> new ResourceNotFoundException("Product with id " + productId + " not found.")))
                 .flatMap(product -> cartItemRepository.findByUserIdAndProductId(userId, productId)
                         .switchIfEmpty(Mono.just(new CartItem(userId, productId))) // Создаем новый CartItem с quantity = 0
@@ -71,10 +65,10 @@ public class CartService {
                             cartItem.setQuantity(newQuantity);
                             return cartItemRepository.save(cartItem)
                                     .map(CartItem::getQuantity); // Возвращаем новую quantity
-                        }));//);.next();
+                        }));
     }
 
-    //@Transactional
+    @Transactional
     public Mono<Void> deleteCartItem(UUID userId, UUID productId) {
         return cartItemRepository.deleteByUserIdAndProductId(userId, productId);
     }

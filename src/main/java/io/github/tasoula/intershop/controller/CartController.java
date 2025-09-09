@@ -1,6 +1,5 @@
 package io.github.tasoula.intershop.controller;
 
-import io.github.tasoula.intershop.dto.ProductDto;
 import io.github.tasoula.intershop.enums.CartAction;
 import io.github.tasoula.intershop.service.CartService;
 import org.springframework.http.ResponseEntity;
