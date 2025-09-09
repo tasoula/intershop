@@ -35,7 +35,6 @@ $(document).ready(function() {
                 }
 
                 // Если количество стало равно нулю и действие было удалением, можно удалить элемент из корзины
-                if (newQuantity <= 0 && action === 'delete') {
                 if (newQuantity <= 0 && action === 'DELETE') {
                      $button.closest('tr').remove();
                 }
