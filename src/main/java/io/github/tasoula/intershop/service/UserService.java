@@ -22,33 +22,18 @@ public class UserService {
     public UserService(UserRepository repository) {
         this.repository = repository;
     }
-/*
-    @Scheduled(cron = "0 0 * * * *") // Каждый час
-    //@Scheduled(fixedDelay = 30000) // Каждые 30 секунд (для тестирования)
-    @Transactional
-    public void deleteExpiredUsers() {
-        long expirationTime = System.currentTimeMillis() - (coockieMaxAge * 1000L);
-        Timestamp expirationTimestamp = new Timestamp(expirationTime);
-
-        // Удаляем пользователей, созданных раньше срока истечения куки
-        repository.deleteByCreatedAtBefore(expirationTimestamp);
-
-        System.out.println("Deleted expired users."); // Log для подтверждения работы
-    }
-     */
 
     public Mono<UUID> createUser() {
         return repository.save(new User()).map(User::getId);
     }
 
-/*    @Scheduled(fixedDelay = 30000)
+    @Scheduled(cron = "0 0 * * * *") // Каждый час
+   // @Scheduled(fixedDelay = 30000) Каждые 30 секунд (для тестирования)
     @Transactional
-    public void deleteExpiredUsers() {
+    public Mono<Void> deleteExpiredUsers() {
         Timestamp expirationTime = new Timestamp( System.currentTimeMillis() - (coockieMaxAge * 1000L));
-        repository.deleteByCreatedAtBefore(expirationTime).subscribe(); // Обрабатываем Mono<Void>
-     //   System.out.println("Deleted expired users.");
+        return repository.deleteByCreatedAtBefore(expirationTime);//.subscribe();
     }
 
- */
 }
 
