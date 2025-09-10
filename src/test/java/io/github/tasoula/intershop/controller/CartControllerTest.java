@@ -51,13 +51,6 @@ class CartControllerTest {
         when(cartService.findByUserId(userId)).thenReturn(Flux.fromIterable(items));
         when(cartService.calculateTotalPriceByUserId(userId)).thenReturn(Mono.just(total));
 
-        FluxExchangeResult<Void> res = webTestClient.get()
-                .uri(uriBuilder -> uriBuilder
-                        .path("/cart/items")
-                        .build())
-                .cookie(USER_ID, userId.toString())
-                .exchange().returnResult(Void.class);
-
         webTestClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/cart/items")
@@ -88,13 +81,6 @@ class CartControllerTest {
 
         when(cartService.findByUserId(userId)).thenReturn(Flux.fromIterable(items));
         when(cartService.calculateTotalPriceByUserId(userId)).thenReturn(Mono.just(total));
-
-        FluxExchangeResult<Void> res = webTestClient.get()
-                .uri(uriBuilder -> uriBuilder
-                        .path("/cart/items")
-                        .build())
-                .cookie(USER_ID, userId.toString())
-                .exchange().returnResult(Void.class);
 
         webTestClient.get()
                 .uri(uriBuilder -> uriBuilder
