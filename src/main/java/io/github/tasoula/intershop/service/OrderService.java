@@ -123,19 +123,6 @@ public class OrderService {
                 .collectList();
     }
 
-
-    private Mono<ProductDto> convertToProductDto(OrderItem orderItem) {
-        return productRepository.findById(orderItem.getProductId())
-                .map(product -> {
-                    ProductDto dto = new ProductDto();
-                    dto.setId(product.getId());
-                    dto.setTitle(product.getTitle());
-                    dto.setQuantity(orderItem.getQuantity());
-                    dto.setPrice(orderItem.getPriceAtTimeOfOrder());
-                    return dto;
-                });
-    }
-
     public Mono<OrderDto> convertToDto(Order order) {
         return orderItemRepository.findByOrderId(order.getId())
                 .flatMap(this::convertToProductDto)  // Используем отдельный метод для преобразования
@@ -149,6 +136,18 @@ public class OrderService {
                             productDtos,
                             totalAmount
                     );
+                });
+    }
+
+    private Mono<ProductDto> convertToProductDto(OrderItem orderItem) {
+        return productRepository.findById(orderItem.getProductId())
+                .map(product -> {
+                    ProductDto dto = new ProductDto();
+                    dto.setId(product.getId());
+                    dto.setTitle(product.getTitle());
+                    dto.setQuantity(orderItem.getQuantity());
+                    dto.setPrice(orderItem.getPriceAtTimeOfOrder());
+                    return dto;
                 });
     }
 }
