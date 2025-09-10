@@ -1,174 +1,181 @@
 package io.github.tasoula.intershop.dao;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import io.github.tasoula.intershop.model.CartItem;
 import io.github.tasoula.intershop.model.Product;
 import io.github.tasoula.intershop.model.User;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class CartItemRepositoryTest extends SpringBootPostgreSQLBase {
 
- /*   @Autowired
-    private TestEntityManager entityManager;
-
     @Autowired
     private CartItemRepository cartItemRepository;
 
-    private User user;
-    private Product product1;
-    private Product product2;
+    @Autowired
+    private ProductRepository productRepository; // Необходимо для создания продуктов
+    @Autowired
+    private UserRepository userRepository; // Необходимо для создания пользователей
+
+    private UUID userId1;
+    private UUID userId2;
+    private UUID productId1;
+    private UUID productId2;
     private CartItem cartItem1;
     private CartItem cartItem2;
-
+    private Product product1;
+    private Product product2;
+    private User user1;
 
     @BeforeEach
-    public void setUp() {
-        // Create and persist test data
-        user = new User();
-        user = entityManager.persist(user);
+    void setUp() {
+        // Очищаем данные перед каждым тестом
+        cartItemRepository.deleteAll().block();
 
+        // Создаем пользователей
+        user1 = new User();
+        user1.setCreatedAt(Timestamp.from(Instant.now()));
+        user1 = userRepository.save(user1).block();
+        userId1 = user1.getId();
+        userId2 = UUID.randomUUID(); // Создаем второй userId без сохранения в БД
+
+        // Создаем продукты
         product1 = new Product();
         product1.setTitle("Product 1");
-        product1.setPrice(BigDecimal.TEN);
-        product1 = entityManager.persist(product1);
+        product1.setPrice(BigDecimal.valueOf(10.00));
+        product1 = productRepository.save(product1).block();
+        productId1 = product1.getId();
 
         product2 = new Product();
         product2.setTitle("Product 2");
-        product2.setPrice(new BigDecimal("5.50"));
-        product2 = entityManager.persist(product2);
+        product2.setPrice(BigDecimal.valueOf(20.00));
+        product2 = productRepository.save(product2).block();
+        productId2 = product2.getId();
 
-
-        cartItem1 = new CartItem();
-        cartItem1.setUser(user);
-        cartItem1.setProduct(product1);
+        // Создаем элементы корзины
+        cartItem1 = new CartItem(userId1, productId1);
         cartItem1.setQuantity(2);
-        cartItem1.setCreatedAt(Timestamp.from(Instant.now())); // Set CreatedAt
-        cartItem1 = entityManager.persist(cartItem1);
+        cartItem2 = new CartItem(userId1, productId2);
+        cartItem2.setQuantity(1);
 
-        cartItem2 = new CartItem();
-        cartItem2.setUser(user);
-        cartItem2.setProduct(product2);
-        cartItem2.setQuantity(3);
-        cartItem2.setCreatedAt(Timestamp.from(Instant.now().minusSeconds(60))); // Slightly older
-        cartItem2 = entityManager.persist(cartItem2);
-
-        //entityManager.flush();
-        //entityManager.clear(); // Clear the persistence context to avoid caching issues
     }
 
-    @AfterEach
-    public void tearDown() {
-        // Clean up the database after each test
-        cartItemRepository.deleteAll();
-        entityManager.remove(user);  // Remove user before removing products
-        entityManager.remove(product1);
-        entityManager.remove(product2);
-        entityManager.flush();
-    }
-
-    @Test
+     @Test
     void findByUserIdAndProductId_ShouldReturnCartItem_WhenExists() {
-        Optional<CartItem> found = cartItemRepository.findByUserIdAndProductId(user.getId(), product1.getId());
-        assertThat(found).isPresent();
-        assertThat(found.get().getProduct().getId()).isEqualTo(product1.getId());
-        assertThat(found.get().getUser().getId()).isEqualTo(user.getId());
+         cartItemRepository.save(cartItem1).block();
+
+         CartItem foundItem = cartItemRepository.findByUserIdAndProductId(userId1, productId1).block();
+
+         assertThat(foundItem).isNotNull();
+         assertThat(foundItem.getUserId()).isEqualTo(userId1);
+         assertThat(foundItem.getProductId()).isEqualTo(productId1);
+
     }
 
-    @Test
+     @Test
     void findByUserIdAndProductId_ShouldReturnEmpty_WhenNotExists() {
-        Optional<CartItem> found = cartItemRepository.findByUserIdAndProductId(user.getId(), UUID.randomUUID());
-        assertThat(found).isEmpty();
+         CartItem foundItem = cartItemRepository.findByUserIdAndProductId(userId1, productId2).block();
+
+         assertThat(foundItem).isNull();
     }
 
     @Test
     void findByUserId_ShouldReturnAllCartItemsForUser() {
-        List<CartItem> cartItems = cartItemRepository.findByUserId(user.getId());
+        cartItemRepository.saveAll(List.of(cartItem1, cartItem2)).blockLast();
+
+        List<CartItem> cartItems = cartItemRepository.findByUserId(userId1).collectList().block();
+
+        assertThat(cartItems).isNotNull();
         assertThat(cartItems).hasSize(2);
-        assertThat(cartItems).extracting(ci -> ci.getProduct().getId()).containsExactlyInAnyOrder(product1.getId(), product2.getId());
+        assertThat(cartItems.stream().map(CartItem::getUserId).distinct().toList()).containsExactly(userId1);
     }
 
-    @Test
+     @Test
     void findByUserId_ShouldReturnEmptyList_WhenNoCartItemsForUser() {
-        User otherUser = new User();
-        otherUser = entityManager.persist(otherUser);
-        List<CartItem> cartItems = cartItemRepository.findByUserId(otherUser.getId());
+      List<CartItem> cartItems = cartItemRepository.findByUserId(userId2).collectList().block();
+        assertThat(cartItems).isNotNull();
         assertThat(cartItems).isEmpty();
-        entityManager.remove(otherUser);
-        entityManager.flush();
-
     }
 
     @Test
-    void findByUserIdOrderByCreatedAtDesc_ShouldReturnCartItemsOrderedByCreatedAtDescending() {
-        List<CartItem> cartItems = cartItemRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
+    void findByUserIdOrderByCreatedAtDesc_ShouldReturnCartItemsOrderedByCreatedAtDesc() {
+        // Создаем элементы корзины с разным временем создания (имитируем разные моменты добавления)
+        CartItem item1 = new CartItem(userId1, productId1);
+        item1.setCreatedAt(Timestamp.from(Instant.now().minusSeconds(5))); // Старый
+        CartItem item2 = new CartItem(userId1, productId2);
+        item2.setCreatedAt(Timestamp.from(Instant.now().minusSeconds(1))); // Новый
+
+        cartItemRepository.saveAll(List.of(item1, item2)).blockLast();
+
+        List<CartItem> cartItems = cartItemRepository.findByUserIdOrderByCreatedAtDesc(userId1).collectList().block();
+
+        assertThat(cartItems).isNotNull();
         assertThat(cartItems).hasSize(2);
-        assertThat(cartItems.get(0).getProduct().getId()).isEqualTo(product1.getId()); // cartItem1 has the latest CreatedAt
-        assertThat(cartItems.get(1).getProduct().getId()).isEqualTo(product2.getId()); // cartItem2 has the oldest CreatedAt
+        // Проверяем порядок сортировки (последний добавленный должен быть первым)
+        assertThat(cartItems.get(0).getCreatedAt()).isAfter(cartItems.get(1).getCreatedAt());
     }
+
 
     @Test
     void deleteByUserIdAndProductId_ShouldDeleteCartItem() {
-        cartItemRepository.deleteByUserIdAndProductId(user.getId(), product1.getId());
-        entityManager.flush(); // Force deletion
-        Optional<CartItem> deletedCartItem = cartItemRepository.findByUserIdAndProductId(user.getId(), product1.getId());
-        assertThat(deletedCartItem).isEmpty();
+        cartItemRepository.save(cartItem1).block();
+
+        cartItemRepository.deleteByUserIdAndProductId(userId1, productId1).block();
+
+        CartItem deletedItem = cartItemRepository.findByUserIdAndProductId(userId1, productId1).block();
+        assertThat(deletedItem).isNull();
     }
 
     @Test
-    void calculateTotalPriceByUserId_ShouldReturnCorrectTotalPrice() {
-        BigDecimal expectedTotalPrice = product1.getPrice().multiply(BigDecimal.valueOf(cartItem1.getQuantity()))
-                .add(product2.getPrice().multiply(BigDecimal.valueOf(cartItem2.getQuantity())));
-        BigDecimal totalPrice = cartItemRepository.calculateTotalPriceByUserId(user.getId());
-        assertThat(totalPrice).isEqualByComparingTo(expectedTotalPrice);
+    void calculateTotalPriceByUserId_ShouldCalculateTotalPrice() {
+        cartItemRepository.saveAll(List.of(cartItem1, cartItem2)).blockLast();
+
+        BigDecimal totalPrice = cartItemRepository.calculateTotalPriceByUserId(userId1).block();
+
+        // 2 * 10.00 + 1 * 20.00 = 40.00
+        assertThat(totalPrice).isNotNull();
+        assertThat(totalPrice).isEqualByComparingTo(BigDecimal.valueOf(40.00));
     }
 
     @Test
-    void calculateTotalPriceByUserId_ShouldReturnZero_WhenNoCartItemsForUser() {
-        User otherUser = new User();
-        otherUser = entityManager.persist(otherUser);
-        BigDecimal totalPrice = cartItemRepository.calculateTotalPriceByUserId(otherUser.getId());
+    void calculateTotalPriceByUserId_ShouldReturnZeroIfNoItems() {
+        BigDecimal totalPrice = cartItemRepository.calculateTotalPriceByUserId(userId2).block(); // userId2 не имеет элементов корзины
+
         assertThat(totalPrice).isNull();
-        entityManager.remove(otherUser);
-        entityManager.flush();
     }
 
     @Test
-    void existsByUserId_ShouldReturnTrue_WhenCartItemsExistForUser() {
-        boolean exists = cartItemRepository.existsByUserId(user.getId());
+    void existsByUserId_ShouldReturnTrueIfUserHasItems() {
+        cartItemRepository.save(cartItem1).block();
+
+        boolean exists = cartItemRepository.existsByUserId(userId1).block();
+
         assertThat(exists).isTrue();
     }
 
     @Test
-    void existsByUserId_ShouldReturnFalse_WhenNoCartItemsExistForUser() {
-        User otherUser = new User();
-        otherUser = entityManager.persist(otherUser);
-        boolean exists = cartItemRepository.existsByUserId(otherUser.getId());
+    void existsByUserId_ShouldReturnFalseIfUserHasNoItems() {
+        boolean exists = cartItemRepository.existsByUserId(userId2).block();
+
         assertThat(exists).isFalse();
-        entityManager.remove(otherUser);
-        entityManager.flush();
     }
 
     @Test
     void deleteByUserId_ShouldDeleteAllCartItemsForUser() {
-        cartItemRepository.deleteByUserId(user.getId());
-        entityManager.flush(); // Force deletion
-        List<CartItem> cartItems = cartItemRepository.findByUserId(user.getId());
+        cartItemRepository.saveAll(List.of(cartItem1, cartItem2)).blockLast();
+
+        cartItemRepository.deleteByUserId(userId1).block();
+
+        List<CartItem> cartItems = cartItemRepository.findByUserId(userId1).collectList().block();
+        assertThat(cartItems).isNotNull();
         assertThat(cartItems).isEmpty();
     }
-
-  */
 }

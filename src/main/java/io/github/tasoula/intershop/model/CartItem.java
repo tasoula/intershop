@@ -30,8 +30,6 @@ public class CartItem {
 
     private Timestamp createdAt;
 
-    //todo: добавить version
-
     public CartItem(UUID userId, UUID productId) {
         this.userId = userId;
         this.productId = productId;

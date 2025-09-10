@@ -43,15 +43,12 @@ class CartServiceTest  {
     private CartService cartService;
 
     private UUID userId;
-    private User user;
     private UUID productId;
     private Product product;
 
     @BeforeEach
     void setUp() {
         userId = UUID.randomUUID();
-        user = new User();
-        user.setId(userId);
 
         productId = UUID.randomUUID();
         product = new Product();
