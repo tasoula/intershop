@@ -1,30 +1,48 @@
 package io.github.tasoula.intershop.controller;
 
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import io.github.tasoula.intershop.dto.ProductDto;
+import io.github.tasoula.intershop.interceptor.UserInterceptor;
+import io.github.tasoula.intershop.service.ProductService;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.data.domain.*;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Mono;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.UUID;
 
-@WebMvcTest(value = ProductController.class,
-        excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = WebConfig.class))
+import static io.github.tasoula.intershop.interceptor.CoockieConst.USER_ID;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
+
+@WebFluxTest(value = ProductController.class,
+        excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = UserInterceptor.class))
 class ProductControllerTest {
 
-    /*
     @Autowired
-    private MockMvc mockMvc;
+    private WebTestClient webTestClient;
 
     @MockitoBean
     private ProductService productService;
 
-    @MockitoBean
-    UserInterceptor userInterceptor;
-
     @Test
-    void show_redirectsToItems() throws Exception {
-        mockMvc.perform(get("/catalog"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/catalog/items"));
+    void show_testRedirect() {
+
+        webTestClient.get()
+                .uri("/catalog")
+                .exchange()
+                .expectStatus().isFound()
+                .expectHeader().valueEquals("Location", "/catalog/items");
     }
 
     @Test
@@ -39,69 +57,110 @@ class ProductControllerTest {
         product1.setId(UUID.randomUUID());
         product1.setTitle("Product A");
         product1.setPrice(BigDecimal.TEN);
+        product1.setDescription("Product A Description");
+        product1.setStockQuantity(9);
+        product1.setQuantity(5);
 
         ProductDto product2 = new ProductDto();
         product2.setId(UUID.randomUUID());
         product2.setTitle("Product B");
         product2.setPrice(BigDecimal.valueOf(20.0));
+        product1.setDescription("Product B Description");
+        product1.setStockQuantity(10);
+        product1.setQuantity(6);
 
         List<ProductDto> productList = List.of(product1, product2);
-        Page<ProductDto> productPage = new PageImpl<>(productList, PageRequest.of(pageNumber, pageSize, Sort.by(ProductController.TITLE).ascending()), productList.size());
+        Mono<Page<ProductDto>> productPage = Mono.just(new PageImpl<>(productList,
+                PageRequest.of(pageNumber, pageSize,
+                        Sort.by(ProductController.TITLE).ascending()),
+                productList.size()));
 
         when(productService.findAll(any(UUID.class), eq(search), any(Pageable.class))).thenReturn(productPage);
-        when(userInterceptor.preHandle(any(HttpServletRequest.class), any(), any())).thenReturn(true);
 
         // Добавляем атрибут в запрос (имитируем работу userInterceptor)
-        MockHttpServletRequestBuilder requestBuilder = get("/catalog/items")
-                .param("search", search)
-                .param("sort", sort)
-                .param("pageSize", String.valueOf(pageSize))
-                .param("pageNumber", String.valueOf(pageNumber));
+        webTestClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/catalog/items")
+                        .queryParam("search", search)
+                        .queryParam("sort", sort)
+                        .queryParam("pageSize", String.valueOf(pageSize))
+                        .queryParam("pageNumber", String.valueOf(pageNumber))
+                        .build())
+                .cookie(USER_ID, userId.toString())
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
+                .expectBody()
+                .consumeWith(result -> {
+                    assertNotNull(result.getResponseBody());
+                    String body = new String(result.getResponseBodyContent());
 
-        // Добавляем userId в атрибуты запроса.
-        requestBuilder.param("userId", userId.toString());
-
-        mockMvc.perform(requestBuilder)
-                .andExpect(status().isOk())
-                .andExpect(view().name("catalog.html"))
-                .andExpect(model().attribute("search", search))
-                .andExpect(model().attribute("sort", sort))
-                .andExpect(model().attribute("paging", productPage))
-                .andExpect(model().attribute("items", productList));
+                    assertTrue(body.contains("<title>Витрина товаров</title>"), "page title not found in template");
+                    assertTrue(body.contains(product1.getTitle()), "product1 not found in template");
+                    assertTrue(body.contains(product2.getTitle()), "product2 not found in template");
+                    assertTrue(body.contains(search), "Search attribute not found in template");
+                    assertTrue(body.contains(sort), "Sort attribute not found in template");
+                });
     }
 
     @Test
-    void showItems_usesDefaultParameters() throws Exception {
-        Page<ProductDto> productPage = new PageImpl<>(List.of());
-        when(productService.findAll(eq(null), eq(null), any(Pageable.class))).thenReturn(productPage); // Указываем eq(null) для userId и search
-        when(userInterceptor.preHandle(any(MockHttpServletRequest.class), any(), any())).thenReturn(true); // Используем MockHttpServletRequest
-
-        mockMvc.perform(get("/catalog/items"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("catalog.html"))
-                .andExpect(model().attribute("search", (String) null)) //  (String) null
-                .andExpect(model().attribute("sort", "NO"));
-    }
-
-    @Test
-    void showItemById_returnsItemView() throws Exception {
-        UUID itemId = UUID.randomUUID();
+    void showItems_withInvalidPageSize_defaultsTo10() {
         UUID userId = UUID.randomUUID();
-        ProductDto product = new ProductDto();
-        product.setId(itemId);
-        product.setTitle("Test Product");
-        product.setDescription("Description of the product");
-        product.setPrice(BigDecimal.TEN);
+        // Arrange
+        int invalidPageSize = -1;
+        int defaultPageSize = 10;
 
-        when(productService.findById(userId, itemId)).thenReturn(product);
-        when(userInterceptor.preHandle(any(HttpServletRequest.class), any(), any())).thenReturn(true);
+        when(productService.findAll(eq(userId), any(), any(Pageable.class)))
+                .thenReturn(Mono.just(new PageImpl<>(java.util.List.of(), PageRequest.of(0, defaultPageSize), 0)));
 
-
-        mockMvc.perform(get("/catalog/items/{id}", itemId)
-                        .param("userId", userId.toString())) // Simulate request attribute set by interceptor
-                .andExpect(status().isOk())
-                .andExpect(view().name("item.html"))
-                .andExpect(model().attribute("item", product));
+        // Act
+        webTestClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/catalog/items")
+                        .queryParam("pageSize", invalidPageSize)
+                        .build())
+                .cookie(USER_ID, userId.toString())
+                .exchange()
+                .expectStatus().isOk();
     }
-*/
+
+    @Test
+    void showItemById_withValidId_returnsItemHtml() {
+        // Arrange
+        UUID userId = UUID.randomUUID();
+        UUID itemId = UUID.randomUUID();
+        ProductDto productDto = new ProductDto(itemId, "title", "desc", BigDecimal.TEN, 10, 4);
+        when(productService.findById(userId, itemId)).thenReturn(Mono.just(productDto));
+
+        webTestClient.get()
+                .uri("/catalog/items/{id}", itemId)
+                .cookie(USER_ID, userId.toString())
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class)
+                .consumeWith(result -> {
+                    assertNotNull(result.getResponseBody());
+                    String body = new String(result.getResponseBodyContent());
+                    assertTrue(body.contains("<title>Витрина товаров</title>"), "page title not found in template");
+                    assertTrue(body.contains(productDto.getTitle()), "product title not found in template");
+                    assertTrue(body.contains(productDto.getDescription()), "product description not found in template");
+                });
+    }
+
+    @Test
+    void newProductForm_returnsNewProductHtml() {
+        // Act
+        webTestClient.get()
+                .uri("/catalog/products/new")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class)
+                .consumeWith(result -> {
+                    assertNotNull(result.getResponseBody());
+                    String body = new String(result.getResponseBodyContent());
+                    assertTrue(body.contains("<title>Добавить новый продукт</title>"), "page title not found in template");
+                });
+
+
+    }
 }

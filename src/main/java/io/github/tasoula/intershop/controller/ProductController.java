@@ -4,7 +4,9 @@ import io.github.tasoula.intershop.dto.ProductDto;
 import io.github.tasoula.intershop.service.ProductService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -13,6 +15,7 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
+import java.net.URI;
 import java.util.UUID;
 
 import static io.github.tasoula.intershop.interceptor.CoockieConst.USER_ID;
@@ -20,10 +23,6 @@ import static io.github.tasoula.intershop.interceptor.CoockieConst.USER_ID;
 @Controller
 @RequestMapping("/catalog")
 public class ProductController {
-
-
-    @Value("${cookie.user.id.name}")
-    private String cookieName;
 
     public static final String TITLE = "title";
     public static final String PRICE = "price";
@@ -35,13 +34,15 @@ public class ProductController {
     }
 
     @GetMapping()
-    public String show() {
-        return "redirect:/catalog/items";
+    public Mono<ResponseEntity<Void>> redirect() {
+        return Mono.just(ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create("/catalog/items"))
+                .build());
     }
 
     @GetMapping("items")
     public Mono<String> showItems(
-            @CookieValue(USER_ID) UUID userId,  // Предполагаем, что @UserId - это кастомная аннотация для извлечения ID пользователя
+            @CookieValue(USER_ID) UUID userId,
             @RequestParam(name = "search", required = false) String search,
             @RequestParam(name = "sort", required = false, defaultValue = "NO") String sort,
             @RequestParam(name = "pageSize", required = false, defaultValue = "10") Integer pageSize,
@@ -60,7 +61,6 @@ public class ProductController {
 
         Pageable pageable = PageRequest.of(pageNumber, pageSize, sortObj);
 
-        // Вызов сервиса и обработка результата с использованием Mono
         return service.findAll(userId, search, pageable)
                 .doOnNext(productPage -> { // Обрабатываем полученный Page<ProductDto>
                     model.addAttribute("search", search);
@@ -78,7 +78,6 @@ public class ProductController {
                     model.addAttribute("item", productDto);
                 })
                 .thenReturn("item.html");
-
     }
 
     @GetMapping("/products/new")
@@ -94,8 +93,7 @@ public class ProductController {
         String description = productDto.getDescription();
         BigDecimal price = productDto.getPrice();
         int stockQuantity = productDto.getStockQuantity();
-
-        return image.flatMap(filePart -> {
+                return image.flatMap(filePart -> {
                     return service.createProduct(title, description, filePart, price, stockQuantity)
                             .thenReturn("redirect:/catalog/items"); //  Возвращаем строку для редиректа
                 })
@@ -104,4 +102,5 @@ public class ProductController {
                     return Mono.just("redirect:/catalog/items?error=true"); // Или другой вид обработки ошибки
                 });
     }
+
 }
