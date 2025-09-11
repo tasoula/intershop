@@ -37,6 +37,4 @@ public class Product {
     @Column("stock_quantity")
     private int stockQuantity;
 
-    //todo: добавить version
-
 }

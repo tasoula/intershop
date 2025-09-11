@@ -7,19 +7,19 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
-import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.multipart.MultipartFile;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -27,12 +27,11 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ImageServiceTest {
- /*   @Mock
+    @Mock
     private ProductRepository repository;
-
     @InjectMocks
     private ImageService imageService;
-
+    @Value("${upload.images.dir}")
     private String uploadDir = "test-upload";
 
     @BeforeEach
@@ -46,7 +45,7 @@ class ImageServiceTest {
         }
     }
 
-    private boolean deleteDirectory(File directoryToBeDeleted) {
+   private boolean deleteDirectory(File directoryToBeDeleted) {
         File[] allContents = directoryToBeDeleted.listFiles();
         if (allContents != null) {
             for (File file : allContents) {
@@ -57,10 +56,10 @@ class ImageServiceTest {
     }
 
     @Test
-    void getImage_existingImage_returnsResource() {
+    void getImage_existingImage_returnsResource() throws IOException {
         UUID postId = UUID.randomUUID();
         String fileName = "image.jpg";
-        when(repository.findImgPathById(postId)).thenReturn(fileName);
+        when(repository.findImgPathById(postId)).thenReturn(Mono.just(fileName));
 
         // Create a dummy file in the upload directory
         Path filePath = Paths.get(uploadDir, fileName);
@@ -72,73 +71,63 @@ class ImageServiceTest {
             fail("Failed to create dummy file: " + e.getMessage());
         }
 
-        Optional<Resource> resource = imageService.getImage(postId);
-        assertTrue(resource.isPresent());
-        assertInstanceOf(FileSystemResource.class, resource.get());
+        Resource resource = imageService.getImage(postId).block();
+        assertNotNull(resource);
+        assertInstanceOf(FileSystemResource.class, resource);
 
         // Replace backslashes with forward slashes
         String expectedPath = filePath.toString().replace("\\", "/");
-        assertEquals(expectedPath, ((FileSystemResource) resource.get()).getPath());
+        assertEquals(expectedPath,  ((FileSystemResource) resource).getPath());
 
         // Clean up the dummy file
         file.delete();
     }
 
-    @Test
+     @Test
     void getImage_nonExistingImage_returnsEmptyOptional() {
         UUID postId = UUID.randomUUID();
-        when(repository.findImgPathById(postId)).thenReturn(null);
+        when(repository.findImgPathById(postId)).thenReturn(Mono.empty());
 
-        Optional<Resource> resource = imageService.getImage(postId);
+        Resource resource = imageService.getImage(postId).block();
 
-        assertFalse(resource.isPresent());
+        assertNull(resource);
     }
 
     @Test
-    void saveToDisc_validFile_savesFileToDisk() throws IOException {
-        String imagePath = "test.jpg";
-        String content = "test image content";
-        MultipartFile file = new MockMultipartFile("file", imagePath, "image/jpeg", content.getBytes());
+    void saveToDisc_validFile_savesFileToDisk() {
+        FilePart filePart = mock(FilePart.class);
+        String imagePath = "test_image.jpg";
+        Path fullPath = Paths.get(uploadDir, imagePath);
 
-        imageService.saveToDisc(file, imagePath);
+        when(filePart.transferTo(any(Path.class))).thenReturn(Mono.empty());
 
-        Path filePath = Paths.get(uploadDir, imagePath);
-        File savedFile = filePath.toFile();
-        assertTrue(savedFile.exists());
+        Mono<Void> saveMono = imageService.saveToDisc(filePart, imagePath);
 
-        // Verify the content of the saved file
-        String savedContent = new String(Files.readAllBytes(filePath));
-        assertEquals(content, savedContent);
+        StepVerifier.create(saveMono)
+                .verifyComplete();
 
-        //Clean up file after verification
-        Files.delete(filePath);
+        verify(filePart, times(1)).transferTo(fullPath);
+
+        // Clean up the test file
+        try {
+            Files.deleteIfExists(fullPath);
+            Files.deleteIfExists(Paths.get(uploadDir));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    @Test
-    void saveToDisc_IOException_logsError() throws IOException {
-        String imagePath = "test.jpg";
-        MultipartFile file = mock(MultipartFile.class);
-        when(file.getInputStream()).thenThrow(new IOException("Simulated IO exception"));
-
-        imageService.saveToDisc(file, imagePath);
-
-        // This test primarily checks for error logging.  You'd typically verify log output here.
-        // Since we're not directly verifying log output, we at least ensure that the exception
-        // doesn't propagate and that the method completes without crashing.  A more robust
-        // implementation would involve a logging framework and assertions against the logged messages.
-        Path filePath = Paths.get(uploadDir, imagePath);
-        File savedFile = filePath.toFile();
-        assertFalse(savedFile.exists());
-
-    }
-
-    @Test
-    void saveToDisc_nullUploadDir_throwsIllegalStateException() {
+     @Test
+    void saveToDisc_noUploadDir_throwsException() {
+        // Создаем новый экземпляр imageService с null uploadDir
         ReflectionTestUtils.setField(imageService, "uploadDir", null);
-        MultipartFile file = new MockMultipartFile("file", "test.jpg", "image/jpeg", "test".getBytes());
+        FilePart filePart = mock(FilePart.class);
+        String imagePath = "test_image.jpg";
 
-        assertThrows(IllegalStateException.class, () -> imageService.saveToDisc(file, "test.jpg"));
+        Mono<Void> saveMono = imageService.saveToDisc(filePart, imagePath);
+
+        StepVerifier.create(saveMono)
+                .expectError(IllegalStateException.class)
+                .verify();
     }
-
-  */
 }

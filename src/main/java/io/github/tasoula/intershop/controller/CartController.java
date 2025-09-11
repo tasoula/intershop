@@ -1,64 +1,68 @@
 package io.github.tasoula.intershop.controller;
 
-import io.github.tasoula.intershop.annotations.UserId;
-import io.github.tasoula.intershop.dto.ProductDto;
 import io.github.tasoula.intershop.enums.CartAction;
 import io.github.tasoula.intershop.service.CartService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.UUID;
+
+import static io.github.tasoula.intershop.interceptor.CoockieConst.USER_ID;
 
 @Controller
 @RequestMapping("/cart")
 public class CartController {
-/*
+
     private final CartService service;
 
     public CartController(CartService service) {
         this.service = service;
     }
 
-
     @GetMapping("/items")
-    public String viewCart(@UserId UUID userId, Model model) {
-        List<ProductDto> items = service.findByUserId(userId);
-        model.addAttribute("items", items);
-        model.addAttribute("total", service.calculateTotalPriceByUserId(userId));
-        model.addAttribute("empty", items.isEmpty());
-        return "cart.html";
+    public Mono<String> viewCart(@CookieValue(USER_ID) UUID userId, Model model) {
+        return service.findByUserId(userId) // Assuming findByUserId returns a Flux<ProductDto> or a Mono<List<ProductDto>>
+                .collectList() // collect all items into list
+                .flatMap(items -> {
+                    model.addAttribute("items", items);
+                    return service.calculateTotalPriceByUserId(userId) // Assuming calculateTotalPriceByUserId returns a Mono<BigDecimal>
+                            .flatMap(total -> {
+                                model.addAttribute("total", total);
+                                model.addAttribute("empty", items.isEmpty());
+                                return Mono.just("cart.html"); // Return the view name as a Mono
+                            });
+                });
     }
 
     @GetMapping("total")
-    private ResponseEntity<BigDecimal> getTotal(@UserId UUID userId){
-        return ResponseEntity.ok(service.calculateTotalPriceByUserId(userId));
+    private Mono<ResponseEntity<BigDecimal>> getTotal(@CookieValue(USER_ID) UUID userId){
+        return service.calculateTotalPriceByUserId(userId)
+                .map(ResponseEntity::ok);
     }
 
     @GetMapping("is_empty")
-    private ResponseEntity<Boolean> isEmpty(@UserId UUID userId){
-       return ResponseEntity.ok(service.isEmpty(userId));
+    private Mono<ResponseEntity<Boolean>> isEmpty(@CookieValue(USER_ID) UUID userId) {
+        return service.isEmpty(userId)
+                .map(ResponseEntity::ok);
     }
 
     @PostMapping("items/{id}")
-    public ResponseEntity<Integer> changeProductQuantityInCart(@UserId UUID userId,
-                                                               @PathVariable("id") UUID productId,
-                                                               @RequestParam("action") CartAction action) {
-        int newQuantity = 0;
-        switch (action){
-            case PLUS -> newQuantity = service.changeProductQuantityInCart(userId, productId, 1);
-            case MINUS -> newQuantity = service.changeProductQuantityInCart(userId, productId, -1);
-            case DELETE -> service.deleteCartItem(userId, productId);
-            default -> {
-                return ResponseEntity.badRequest().build();
-            }
-        }
-
-        return ResponseEntity.ok(newQuantity);
+    public Mono<ResponseEntity<Integer>> changeProductQuantityInCart(
+            @CookieValue(USER_ID) UUID userId,
+            @PathVariable("id") UUID productId,
+            @RequestParam("action") CartAction action
+    ) {
+        return switch (action) {
+            case PLUS -> service.changeProductQuantityInCart(userId, productId, 1)
+                    .map(ResponseEntity::ok);
+            case MINUS -> service.changeProductQuantityInCart(userId, productId, -1)
+                    .map(ResponseEntity::ok);
+            case DELETE -> service.deleteCartItem(userId, productId)
+                    .thenReturn(ResponseEntity.ok(0)); // Возвращаем OK с 0, т.к. quantity не возвращается при DELETE
+        };
     }
-
- */
 }

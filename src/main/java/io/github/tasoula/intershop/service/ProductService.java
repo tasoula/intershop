@@ -9,6 +9,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -19,13 +20,14 @@ import java.util.*;
 public class ProductService {
 
     private final ProductRepository productRepository;
-    //   private final CartService cartService;
+    private final CartService cartService;
 
     private final ImageService imageService;
 
 
-    public ProductService(ProductRepository repository, ImageService imageService) {
+    public ProductService(ProductRepository repository, CartService cartService, ImageService imageService) {
         this.productRepository = repository;
+        this.cartService = cartService;
         this.imageService = imageService;
     }
 
@@ -44,7 +46,7 @@ public class ProductService {
 
     private Mono<ProductDto> mapToDto(UUID userId, Product product) {
         // Асинхронно получаем количество товара в корзине.  cartService.getCartQuantity возвращает Mono<Integer>
-        return Mono.just(0) // todo cartService.getCartQuantity(userId, product.getId())
+        return  cartService.getCartQuantity(userId, product.getId())
                 .map(cartQuantity -> new ProductDto(product, cartQuantity)); // Преобразуем в ProductDto
     }
 
@@ -55,9 +57,10 @@ public class ProductService {
                 .flatMap(product -> mapToDto(userId, product)); // Используем flatMap для преобразования Mono<Product> в Mono<ProductDto>
     }
 
+    @Transactional
     public Mono<Void> createProduct(String title,
                                     String description,
-                                    FilePart image, // Используем FilePart для WebFlux
+                                    FilePart image,
                                     BigDecimal price,
                                     int stockQuantity) {
         Product product = new Product();

@@ -2,7 +2,7 @@
 
 ## Описание
 
-Веб-приложение "Витрина интернет-магазина" разработано на Spring Boot и предоставляет функциональность для просмотра, добавления в корзину и покупки товаров.
+Веб-приложение "Витрина интернет-магазина" разработано на Spring Boot с использованием реактивного стека (Spring WebFlux и Spring Data R2DBC) и предоставляет функциональность для просмотра, добавления в корзину и покупки товаров.
 
 ## Технологии
 
@@ -11,11 +11,10 @@
 •   **Сборка:** Gradle
 •   **База данных:** PostgreSQL
 •   **Шаблонизатор:** Thymeleaf
-•   **Веб-фреймворк:** Spring Web MVC
-•   **Доступ к данным:** Spring Data JPA (Hibernate ORM)
-•   **Миграции базы данных:** Liquibase
-•   **Тестирование:** JUnit 5, Spring TestContext Framework, Spring Boot Test, Testcontainers
-•   **Сервлет-контейнер:** Embedded Tomcat
+•   **Веб-фреймворк:** Spring WebFlux (Reactive Web)
+•   **Доступ к данным:** Spring Data R2DBC (Reactive Relational Database Connectivity) 
+•   **Тестирование:** JUnit 5, Spring TestContext Framework, Spring Boot Test, Testcontainers, Reactor Test
+•   **Сервлет-контейнер:** Netty (Embedded Reactive Server)
 •   **Контейнеризация:** Docker
 
 ## Необходимые условия
@@ -60,9 +59,9 @@
 1.  **Настройка базы данных:**
 
     •   Создайте базу данных PostgreSQL для разработки.
-    •   Схема базы данных создается и обновляется автоматически при запуске приложения, основываясь на файле `db.changelog-master.xml`, расположенном в `classpath:/db/changelog/`.
-    •   Файл `db/changelog/insert-initial-data-to-products-table.xml` используется для первоначальной загрузки данных в таблицу продуктов для демонстрации функциональности.  Он будет применен при первом запуске приложения или при наличии изменений в схеме.
-
+    •   Схема создается автоматически с помощью Spring Data R2BC.
+    •   (Опционально) Для первоначальной загрузки данных можно использовать дамп `db-backup/backup_blog_db.sql`.
+    
 2.  **Конфигурация приложения:**
 
     Отредактируйте файл `src/main/resources/application.yml` и настройте следующие параметры:
@@ -79,7 +78,7 @@
 ```yaml
      spring:
       datasource:
-       url: jdbc:postgresql://localhost:5432/your_database_name
+       url: r2dbc:postgresql://localhost:5432/your_database_name
        username: your_username
        password: your_password
 ```
