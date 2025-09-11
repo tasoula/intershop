@@ -1,5 +1,6 @@
 package io.github.tasoula.intershop.service;
 
+import io.github.tasoula.intershop.dao.ProductRepository;
 import io.github.tasoula.intershop.dao.UserRepository;
 import io.github.tasoula.intershop.model.User;
 import org.junit.jupiter.api.BeforeEach;
@@ -9,6 +10,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+import reactor.core.publisher.Mono;
 
 import java.sql.Timestamp;
 import java.util.UUID;
@@ -19,8 +21,11 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class UserServiceTest {
 
- /*   @Mock
+    @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private ProductRepository repository;
 
     @InjectMocks
     private UserService userService;
@@ -36,10 +41,10 @@ public class UserServiceTest {
         // Arrange
         User newUser = new User();
         newUser.setId(UUID.randomUUID()); // Присваиваем ID, чтобы избежать NullPointerException
-        when(userRepository.save(any(User.class))).thenReturn(newUser);
+        when(userRepository.save(any(User.class))).thenReturn(Mono.just(newUser));
 
         // Act
-        UUID userId = userService.createUser();
+        UUID userId = userService.createUser().block();
 
         // Assert
         assertNotNull(userId);
@@ -61,5 +66,5 @@ public class UserServiceTest {
         verify(userRepository, times(1)).deleteByCreatedAtBefore(expirationTimestamp);
     }
 
-  */
+
 }
