@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class UserRepositoryTest extends SpringBootPostgreSQLBase{
 
-    @Autowired
+   @Autowired
     private UserRepository userRepository;
 
     private User user1;

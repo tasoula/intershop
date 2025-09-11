@@ -82,4 +82,6 @@ class OrderRepositoryTest extends SpringBootPostgreSQLBase{
         assertThat(savedOrder.getUserId()).isEqualTo(userId1);
         assertThat(savedOrder.getTotalAmount()).isEqualByComparingTo(order1.getTotalAmount());
     }
+
+
 }

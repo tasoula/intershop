@@ -34,13 +34,10 @@ public class ProductServiceTest {
 
     @Mock
     private ProductRepository productRepository;
-
     @Mock
     private CartService cartService;
-
     @Mock
     private ImageService imageService;
-
     @InjectMocks
     private ProductService productService;
 

@@ -31,9 +31,6 @@ public class CartItemRepositoryTest extends SpringBootPostgreSQLBase {
     private UUID productId2;
     private CartItem cartItem1;
     private CartItem cartItem2;
-    private Product product1;
-    private Product product2;
-    private User user1;
 
     @BeforeEach
     void setUp() {
@@ -41,20 +38,20 @@ public class CartItemRepositoryTest extends SpringBootPostgreSQLBase {
         cartItemRepository.deleteAll().block();
 
         // Создаем пользователей
-        user1 = new User();
+        User user1 = new User();
         user1.setCreatedAt(Timestamp.from(Instant.now()));
         user1 = userRepository.save(user1).block();
         userId1 = user1.getId();
         userId2 = UUID.randomUUID(); // Создаем второй userId без сохранения в БД
 
         // Создаем продукты
-        product1 = new Product();
+        Product product1 = new Product();
         product1.setTitle("Product 1");
         product1.setPrice(BigDecimal.valueOf(10.00));
         product1 = productRepository.save(product1).block();
         productId1 = product1.getId();
 
-        product2 = new Product();
+        Product product2 = new Product();
         product2.setTitle("Product 2");
         product2.setPrice(BigDecimal.valueOf(20.00));
         product2 = productRepository.save(product2).block();
