@@ -1,7 +1,7 @@
 version: "3.8"
 services:
   db:
-    image: postgres:16-alpine  # Используйте версию Postgres, совместимую с вашей схемой
+    image: postgres:16-alpine
     container_name: postgres
     environment:
       POSTGRES_USER: ${INTERSHOP_DB_USERNAME}
@@ -22,7 +22,7 @@ services:
     depends_on:
       - db
     environment:
-      INTERSHOP_DB_URL: jdbc:postgresql://db:5432/${INTERSHOP_DB_USERNAME}
+      INTERSHOP_DB_URL: r2dbc:postgresql://db:5432/${INTERSHOP_DB_NAME}
       INTERSHOP_DB_USERNAME: ${INTERSHOP_DB_USERNAME}
       INTERSHOP_DB_PASSWORD: ${INTERSHOP_DB_PASSWORD}
       COOKIE_MAX_AGE_SECONDS: 86400

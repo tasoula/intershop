@@ -32,6 +32,4 @@ public class Order {
 
     @Column("total_amount")
     private BigDecimal totalAmount;
-
-    //todo: добавить version
 }

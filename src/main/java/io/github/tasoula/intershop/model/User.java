@@ -21,10 +21,6 @@ public class User {
     @Id
     private UUID id;
 
-    @CreatedDate //  Аннотация для автоматического заполнения поля при создании записи
-    // Убедитесь, что в вашей базе данных колонка created_at определена как TIMESTAMP или аналогичный тип, и что она не имеет значения по умолчанию, если вы используете @CreatedDate
     @Column("created_at")
     private Timestamp createdAt;
-
-    //todo: добавить version
 }

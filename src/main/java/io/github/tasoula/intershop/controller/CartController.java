@@ -23,7 +23,6 @@ public class CartController {
         this.service = service;
     }
 
-
     @GetMapping("/items")
     public Mono<String> viewCart(@CookieValue(USER_ID) UUID userId, Model model) {
         return service.findByUserId(userId) // Assuming findByUserId returns a Flux<ProductDto> or a Mono<List<ProductDto>>
@@ -39,21 +38,17 @@ public class CartController {
                 });
     }
 
-
-
     @GetMapping("total")
     private Mono<ResponseEntity<BigDecimal>> getTotal(@CookieValue(USER_ID) UUID userId){
         return service.calculateTotalPriceByUserId(userId)
                 .map(ResponseEntity::ok);
     }
 
-
     @GetMapping("is_empty")
     private Mono<ResponseEntity<Boolean>> isEmpty(@CookieValue(USER_ID) UUID userId) {
         return service.isEmpty(userId)
                 .map(ResponseEntity::ok);
     }
-
 
     @PostMapping("items/{id}")
     public Mono<ResponseEntity<Integer>> changeProductQuantityInCart(
@@ -68,8 +63,6 @@ public class CartController {
                     .map(ResponseEntity::ok);
             case DELETE -> service.deleteCartItem(userId, productId)
                     .thenReturn(ResponseEntity.ok(0)); // Возвращаем OK с 0, т.к. quantity не возвращается при DELETE
-            default -> Mono.just(ResponseEntity.badRequest().build());
         };
     }
-
 }

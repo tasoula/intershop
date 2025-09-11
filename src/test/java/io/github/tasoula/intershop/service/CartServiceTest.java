@@ -14,6 +14,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -30,24 +33,22 @@ import static org.mockito.Mockito.times;
 @ExtendWith(MockitoExtension.class)
 class CartServiceTest  {
 
- /*   @InjectMocks
-    private CartService cartService;
     @Mock
     private CartItemRepository cartItemRepository;
 
     @Mock
-    private EntityManager entityManager;
+    private ProductRepository productRepository;
+
+   @InjectMocks
+    private CartService cartService;
 
     private UUID userId;
-    private User user;
     private UUID productId;
     private Product product;
 
     @BeforeEach
     void setUp() {
         userId = UUID.randomUUID();
-        user = new User();
-        user.setId(userId);
 
         productId = UUID.randomUUID();
         product = new Product();
@@ -59,7 +60,9 @@ class CartServiceTest  {
     @Test
     void findByUserId_shouldReturnProductDtoList() {
         // Arrange
-        CartItem cartItem1 = new CartItem(user, product);
+        CartItem cartItem1 = new CartItem();
+        cartItem1.setUserId(userId);
+        cartItem1.setProductId(productId);
         cartItem1.setCreatedAt(Timestamp.from(Instant.now()));
         cartItem1.setQuantity(2);
 
@@ -69,72 +72,98 @@ class CartServiceTest  {
         product2.setTitle("Test Product 2");
         product2.setStockQuantity(20);
 
-        CartItem cartItem2 = new CartItem(user, product2);
+        CartItem cartItem2 = new CartItem();
+        cartItem2.setUserId(userId);
+        cartItem2.setProductId(productId2);
         cartItem2.setQuantity(3);
         cartItem2.setCreatedAt(Timestamp.from(Instant.MIN));
         List<CartItem> cartItems = List.of(cartItem1, cartItem2);
 
-        when(cartItemRepository.findByUserIdOrderByCreatedAtDesc(userId)).thenReturn(cartItems);
+        when(cartItemRepository.findByUserIdOrderByCreatedAtDesc(userId)).thenReturn(Flux.fromIterable(cartItems));
+        when(productRepository.findById(productId)).thenReturn(Mono.just(product));
+        when(productRepository.findById(product2.getId())).thenReturn(Mono.just(product2));
 
-        // Act
-        List<ProductDto> productDtos = cartService.findByUserId(userId);
 
-        // Assert
-        assertEquals(2, productDtos.size());
-        assertEquals(product.getTitle(), productDtos.get(0).getTitle());
-        assertEquals(cartItem1.getQuantity(), productDtos.get(0).getQuantity()); // Проверяем, что количество корректно
-        assertEquals(cartItem2.getQuantity(), productDtos.get(1).getQuantity());
-        verify(cartItemRepository, times(1)).findByUserIdOrderByCreatedAtDesc(userId);
+        StepVerifier.create(cartService.findByUserId(userId))
+                .assertNext(productDto -> {
+                    assert productDto.getTitle().equals(product.getTitle());
+                    assert productDto.getQuantity() == cartItem1.getQuantity();
+                })
+                .assertNext(productDto -> {
+                    assert productDto.getTitle().equals(product2.getTitle());
+                    assert productDto.getQuantity() == cartItem2.getQuantity();
+                })
+                .verifyComplete();
+
+        verify(cartItemRepository).findByUserIdOrderByCreatedAtDesc(userId);
+        verify(productRepository).findById(productId);
+        verify(productRepository).findById(productId2);
     }
 
      @Test
     void changeProductQuantityInCart_productNotFound_shouldThrowException() {
-           // Arrange
-           when(entityManager.getReference(Product.class, productId)).thenThrow(EntityNotFoundException.class);
+         int changeQuantity = 2;
 
-           // Act & Assert
-           assertThrows(EntityNotFoundException.class, () -> cartService.changeProductQuantityInCart(userId, productId, 1));
-           verify(entityManager, times(1)).getReference(Product.class, productId);
-           verifyNoInteractions(cartItemRepository);
+         when(productRepository.findById(productId)).thenReturn(Mono.empty());
+
+         Mono<Integer> result = cartService.changeProductQuantityInCart(userId, productId, changeQuantity);
+
+         StepVerifier.create(result)
+                 .expectError(ResourceNotFoundException.class)
+                 .verify();
+
+         verify(cartItemRepository, never()).save(any(CartItem.class));
+         verify(cartItemRepository, never()).deleteByUserIdAndProductId(any(), any());
        }
 
-    @Test
+   @Test
     void changeProductQuantityInCart_cartItemNotFound_shouldCreateNewCartItem() {
-        // Arrange
-        when(entityManager.getReference(User.class, userId)).thenReturn(user);
-        when(entityManager.getReference(Product.class, productId)).thenReturn(product);
-        when(cartItemRepository.findByUserIdAndProductId(userId, productId)).thenReturn(Optional.empty());
-        when(cartItemRepository.save(any(CartItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
+       int changeQuantity = 3;
+       int expectedQuantity = changeQuantity; // Initial quantity equals to changeQuantity because cart item doesn't exist
 
-        // Act
-        int newQuantity = cartService.changeProductQuantityInCart(userId, productId, 5);
+       when(productRepository.findById(productId)).thenReturn(Mono.just(product));
+       when(cartItemRepository.findByUserIdAndProductId(userId, productId)).thenReturn(Mono.empty());
+       when(cartItemRepository.save(any(CartItem.class))).thenAnswer(invocation -> {
+           CartItem savedCartItem = invocation.getArgument(0);
+           savedCartItem.setQuantity(expectedQuantity); // Simulate the quantity update in the saved item
+           return Mono.just(savedCartItem);
+       });
 
-        // Assert
-        assertEquals(5, newQuantity);
-        verify(entityManager, times(1)).getReference(Product.class, productId);
-        verify(entityManager, times(1)).getReference(User.class, userId);
-        verify(cartItemRepository, times(1)).findByUserIdAndProductId(userId, productId);
-        verify(cartItemRepository, times(1)).save(any(CartItem.class));
+       Mono<Integer> result = cartService.changeProductQuantityInCart(userId, productId, changeQuantity);
+
+       StepVerifier.create(result)
+               .expectNext(expectedQuantity)
+               .verifyComplete();
+
+       verify(cartItemRepository, times(1)).save(argThat(item -> item.getQuantity() == expectedQuantity));
+
+       verify(cartItemRepository, times(1)).findByUserIdAndProductId(userId, productId);
+
     }
 
-        @Test
+         @Test
     void changeProductQuantityInCart_changeQuantityIsNegativeAndResultIsZero_shouldDeleteCartItem() {
-           // Arrange
-           CartItem cartItem = new CartItem(user, product);
-           cartItem.setQuantity(2);
-           when(entityManager.getReference(Product.class, productId)).thenReturn(product);
-           when(cartItemRepository.findByUserIdAndProductId(userId, productId)).thenReturn(Optional.of(cartItem));
+             // Arrange
+             CartItem cartItem = new CartItem();
+             cartItem.setUserId(userId);
+             cartItem.setProductId(productId);
+             cartItem.setQuantity(2);
+             int changeQuantity = -5;
 
-           // Act
-           int newQuantity = cartService.changeProductQuantityInCart(userId, productId, -2);
+             when(productRepository.findById(productId)).thenReturn(Mono.just(product));
+             when(cartItemRepository.findByUserIdAndProductId(userId, productId)).thenReturn(Mono.just(cartItem));
+             when(cartItemRepository.deleteByUserIdAndProductId(userId, productId)).thenReturn(Mono.empty()); // Simulate successful delete
 
-           // Assert
-           assertEquals(0, newQuantity);
-           verify(entityManager, times(1)).getReference(Product.class, productId);
-           verify(cartItemRepository, times(1)).findByUserIdAndProductId(userId, productId);
-           verify(cartItemRepository, times(1)).delete(cartItem);
-           verify(cartItemRepository, never()).save(any(CartItem.class));
-       }
+             Mono<Integer> result = cartService.changeProductQuantityInCart(userId, productId, changeQuantity);
+
+             StepVerifier.create(result)
+                     .expectNext(0) // Expect the method to return 0 when deleting
+                     .verifyComplete();
+
+             verify(cartItemRepository, times(1)).deleteByUserIdAndProductId(userId, productId);
+             verify(cartItemRepository, never()).save(any(CartItem.class)); // Ensure save is not called
+
+         }
 
       @Test
        void changeProductQuantityInCart_changeQuantityIsPositiveAndResultExceedsStock_shouldSetQuantityToStockQuantity() {
@@ -144,120 +173,157 @@ class CartServiceTest  {
            productWithLimitedStock.setTitle("Test Product");
            productWithLimitedStock.setStockQuantity(3);
 
-           CartItem cartItem = new CartItem(user, productWithLimitedStock);
+           CartItem cartItem = new CartItem(userId, productWithLimitedStock.getId());
            cartItem.setQuantity(2);
 
-           when(entityManager.getReference(Product.class, productId)).thenReturn(productWithLimitedStock);
-           when(cartItemRepository.findByUserIdAndProductId(userId, productId)).thenReturn(Optional.of(cartItem));
-           when(cartItemRepository.save(any(CartItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
+          when(productRepository.findById(productWithLimitedStock.getId())).thenReturn(Mono.just(productWithLimitedStock));
+           when(cartItemRepository.findByUserIdAndProductId(userId, productId)).thenReturn(Mono.just(cartItem));
+           when(cartItemRepository.save(any(CartItem.class))).thenReturn(Mono.just(cartItem));
 
            // Act
-           int newQuantity = cartService.changeProductQuantityInCart(userId, productId, 5);
+          Mono<Integer> newQuantity = cartService.changeProductQuantityInCart(userId, productId, 5);
 
-           // Assert
-           assertEquals(3, newQuantity);
-           verify(entityManager, times(1)).getReference(Product.class, productId);
+          StepVerifier.create(newQuantity)
+                  .expectNext(productWithLimitedStock.getStockQuantity())
+                  .verifyComplete();
+
            verify(cartItemRepository, times(1)).findByUserIdAndProductId(userId, productId);
            verify(cartItemRepository, times(1)).save(any(CartItem.class));
        }
 
-         @Test
-         void changeProductQuantityInCart_successfulUpdate() {
-             // Arrange
-             CartItem cartItem = new CartItem(user, product);
-             cartItem.setQuantity(2);
+       @Test
+        void changeProductQuantityInCart_successfulUpdate() {
+            // Arrange
+            CartItem cartItem = new CartItem(userId, productId);
+            cartItem.setQuantity(2);
+           int changeQuantity = 3;
+           int expectedQuantity = cartItem.getQuantity() + changeQuantity;
 
-             when(entityManager.getReference(Product.class, productId)).thenReturn(product);
-             when(cartItemRepository.findByUserIdAndProductId(userId, productId)).thenReturn(Optional.of(cartItem));
-             when(cartItemRepository.save(any(CartItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(productRepository.findById(productId)).thenReturn(Mono.just(product));
+            when(cartItemRepository.findByUserIdAndProductId(userId, productId)).thenReturn(Mono.just(cartItem));
+            when(cartItemRepository.save(any(CartItem.class))).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
-             // Act
-             int newQuantity = cartService.changeProductQuantityInCart(userId, productId, 3);
+            // Act
+           Mono<Integer> newQuantity = cartService.changeProductQuantityInCart(userId, productId, changeQuantity);
 
-             // Assert
-             assertEquals(5, newQuantity);
-             verify(entityManager, times(1)).getReference(Product.class, productId);
-             verify(cartItemRepository, times(1)).findByUserIdAndProductId(userId, productId);
-             verify(cartItemRepository, times(1)).save(cartItem);
-         }
+           StepVerifier.create(newQuantity)
+                   .expectNext(cartItem.getQuantity() + changeQuantity)
+                   .verifyComplete();
 
-    @Test
-    void calculateTotalPriceByUserId_ShouldReturnTotalPrice_WhenCartIsNotEmpty() {
-        // Arrange
-        BigDecimal expectedTotalPrice = new BigDecimal("100.00");
-        when(cartItemRepository.calculateTotalPriceByUserId(userId)).thenReturn(expectedTotalPrice);
-
-        // Act
-        BigDecimal actualTotalPrice = cartService.calculateTotalPriceByUserId(userId);
-
-        // Assert
-        assertEquals(expectedTotalPrice, actualTotalPrice);
-    }
+            // Assert
+            verify(cartItemRepository, times(1)).findByUserIdAndProductId(userId, productId);
+            verify(cartItemRepository, times(1)).save(cartItem);
+        }
 
     @Test
-    void calculateTotalPriceByUserId_ShouldReturnZero_WhenCartIsEmpty() {
-        // Arrange
-        when(cartItemRepository.calculateTotalPriceByUserId(userId)).thenReturn(null);
+   void calculateTotalPriceByUserId_ShouldReturnTotalPrice_WhenCartIsNotEmpty() {
+       // Arrange
+       BigDecimal expectedTotalPrice = new BigDecimal("100.00");
+       when(cartItemRepository.calculateTotalPriceByUserId(userId)).thenReturn(Mono.just(expectedTotalPrice));
 
-        // Act
-        BigDecimal actualTotalPrice = cartService.calculateTotalPriceByUserId(userId);
+       // Act
+        Mono<BigDecimal> actualTotalPrice = cartService.calculateTotalPriceByUserId(userId);
 
-        // Assert
-        assertEquals(BigDecimal.ZERO, actualTotalPrice);
-    }
+       // Assert
+        StepVerifier.create(actualTotalPrice)
+                .expectNext(expectedTotalPrice)
+                .verifyComplete();
+        verify(cartItemRepository, times(1)).calculateTotalPriceByUserId(userId);
+   }
+
+   @Test
+   void calculateTotalPriceByUserId_ShouldReturnZero_WhenCartIsEmpty() {
+       when(cartItemRepository.calculateTotalPriceByUserId(userId)).thenReturn(Mono.empty());
+
+       // Act
+       Mono<BigDecimal> result = cartService.calculateTotalPriceByUserId(userId);
+
+       // Assert
+       StepVerifier.create(result)
+               .expectNext(BigDecimal.ZERO)
+               .verifyComplete();
+       verify(cartItemRepository, times(1)).calculateTotalPriceByUserId(userId);
+   }
+
+  @Test
+   void isEmpty_ShouldReturnTrue_WhenCartIsEmpty() {
+      when(cartItemRepository.existsByUserId(userId)).thenReturn(Mono.just(false));
+
+      // Act
+      Mono<Boolean> result = cartService.isEmpty(userId);
+
+      // Assert
+      StepVerifier.create(result)
+              .expectNext(true)
+              .verifyComplete();
+      verify(cartItemRepository, times(1)).existsByUserId(userId);
+   }
 
     @Test
-    void isEmpty_ShouldReturnTrue_WhenCartIsEmpty() {
+   void isEmpty_ShouldReturnFalse_WhenCartIsNotEmpty() {
         // Arrange
-        when(cartItemRepository.existsByUserId(userId)).thenReturn(false);
+        when(cartItemRepository.existsByUserId(userId)).thenReturn(Mono.just(true));
 
         // Act
-        boolean isEmpty = cartService.isEmpty(userId);
+        Mono<Boolean> result = cartService.isEmpty(userId);
 
         // Assert
-        assertTrue(isEmpty);
-    }
-
-    @Test
-    void isEmpty_ShouldReturnFalse_WhenCartIsNotEmpty() {
-        // Arrange
-        when(cartItemRepository.existsByUserId(userId)).thenReturn(true);
-
-        // Act
-        boolean isEmpty = cartService.isEmpty(userId);
-
-        // Assert
-        assertFalse(isEmpty);
+        StepVerifier.create(result)
+                .expectNext(false)
+                .verifyComplete();
+        verify(cartItemRepository, times(1)).existsByUserId(userId);
     }
 
     @Test
     void getCartQuantity_UserIsNotNull_ReturnsQuantityFromCartItemRepository() {
         CartItem cartItem = new CartItem();
-        cartItem.setUser(user);
-        cartItem.setProduct(product);
+        cartItem.setUserId(userId);
+        cartItem.setProductId(productId);
         cartItem.setQuantity(5);
 
-        when(cartItemRepository.findByUserIdAndProductId(userId, productId)).thenReturn(Optional.of(cartItem));
-        int quantity = cartService.getCartQuantity(userId, productId);
-        assertEquals(5, quantity);
+        when(cartItemRepository.findByUserIdAndProductId(userId, productId)).thenReturn(Mono.just(cartItem));
+
+        StepVerifier.create(cartService.getCartQuantity(userId, productId))
+                .expectNext(cartItem.getQuantity())
+                .verifyComplete();
+
         verify(cartItemRepository).findByUserIdAndProductId(userId, productId);
+
     }
 
     @Test
     void getCartQuantity_UserIsNotNull_ReturnsZeroIfCartItemNotFound() {
-        when(cartItemRepository.findByUserIdAndProductId(userId, productId)).thenReturn(Optional.empty());
-        int quantity = cartService.getCartQuantity(userId, productId);
-        assertEquals(0, quantity);
+        when(cartItemRepository.findByUserIdAndProductId(userId, productId))
+                .thenReturn(Mono.empty());
+
+        // Act & Assert
+        StepVerifier.create(cartService.getCartQuantity(userId, productId))
+                .expectNext(0)
+                .verifyComplete();
+
         verify(cartItemRepository).findByUserIdAndProductId(userId, productId);
     }
 
     @Test
     void getCartQuantity_UserIsNull_ReturnsZero() {
-        int quantity = cartService.getCartQuantity(null, productId);
-        assertEquals(0, quantity);
+        StepVerifier.create(cartService.getCartQuantity(null, productId))
+                .expectNext(0)
+                .verifyComplete();
+
         verifyNoInteractions(cartItemRepository);
     }
 
+    @Test
+    void deleteCartItem_ShouldCallRepositoryDeleteMethod() {
+        // Arrange
+        when(cartItemRepository.deleteByUserIdAndProductId(userId, productId)).thenReturn(Mono.empty());
 
-  */
+        // Act
+        Mono<Void> result = cartService.deleteCartItem(userId, productId);
+
+        // Assert
+        StepVerifier.create(result)
+                .verifyComplete();
+        verify(cartItemRepository, times(1)).deleteByUserIdAndProductId(userId, productId);
+    }
 }

@@ -1,77 +1,140 @@
 package io.github.tasoula.intershop.controller;
 
+import io.github.tasoula.intershop.dto.OrderDto;
+import io.github.tasoula.intershop.interceptor.UserInterceptor;
+import io.github.tasoula.intershop.service.OrderService;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-//@WebMvcTest(value = OrderController.class,
- //       excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = WebConfig.class))
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.UUID;
+
+import static io.github.tasoula.intershop.interceptor.CoockieConst.USER_ID;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.when;
+
+@WebFluxTest(value = OrderController.class,
+        excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = UserInterceptor.class))
 class OrderControllerTest {
- /*   @Autowired
-    private MockMvc mockMvc;
+    @Autowired
+    private WebTestClient webTestClient;
 
     @MockitoBean
     private OrderService orderService;
 
-    @MockitoBean
-    UserInterceptor userInterceptor;
-
     @Test
     void show_ShouldReturnOrdersViewWithOrders() throws Exception {
         UUID userId = UUID.randomUUID();
-        List<OrderDto> orders = Collections.singletonList(new OrderDto()); // Mock Order object
-        when(orderService.getByUserId(userId)).thenReturn(orders);
+        OrderDto order1 = new OrderDto();
+        order1.setId(UUID.randomUUID());
+        OrderDto order2 = new OrderDto();
+        order2.setId(UUID.randomUUID());
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/orders")
-                        .param("userId", userId.toString()))
-                .andExpect(status().isOk())
-                .andExpect(view().name("orders.html"))
-                .andExpect(model().attribute("orders", orders));
+        List<OrderDto> orderList = List.of(order1, order2);
+        when(orderService.getByUserId(userId)).thenReturn(Flux.fromIterable(orderList));
 
-        Mockito.verify(orderService).getByUserId(userId);
+        webTestClient.get()
+                .uri("/orders")
+                .cookie(USER_ID, userId.toString())
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
+                .expectBody()
+                .consumeWith(result -> {
+                    assertNotNull(result.getResponseBody());
+                    String body = new String(result.getResponseBodyContent());
+
+                    assertTrue(body.contains("<title>Заказы</title>"), "page title not found in template");
+                    assertTrue(body.contains(String.format("<a href=\"/orders/%s\">Заказ №%s</a>", order1.getId(), order1.getId())), "order1 not found in template");
+                    assertTrue(body.contains(String.format("<a href=\"/orders/%s\">Заказ №%s</a>", order2.getId(), order2.getId())), "order2 not found in template");
+                });
     }
 
     @Test
     void showOrder_ShouldReturnOrderViewWithOrder() throws Exception {
         UUID orderId = UUID.randomUUID();
         OrderDto order = new OrderDto(); // Mock Order object
-        when(orderService.getById(orderId)).thenReturn(Optional.of(order));
+        order.setId(orderId);
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/orders/{id}", orderId)
-                        .param("newOrder", "true"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("order.html"))
-                .andExpect(model().attribute("order", order))
-                .andExpect(model().attribute("newOrder", true));
 
-        Mockito.verify(orderService).getById(orderId);
+        when(orderService.getById(orderId)).thenReturn(Mono.just(order));
+
+        webTestClient.get()
+                .uri("/orders/" + orderId)
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
+                .expectBody()
+                .consumeWith(result -> {
+                    assertNotNull(result.getResponseBody());
+                    String body = new String(result.getResponseBodyContent());
+
+                    assertTrue(body.contains("<title>Заказ</title>"), "page title not found in template");
+                    assertTrue(body.contains(String.format("<h2>Заказ №%s</h2>", order.getId())), "order not found in template");
+                });
     }
 
     @Test
+    void showOrder_returnsOrderView_withNewOrderFlag() {
+        UUID orderId = UUID.randomUUID();
+        OrderDto order = new OrderDto();
+        order.setId(orderId);
+        when(orderService.getById(orderId)).thenReturn(Mono.just(order));
+        webTestClient.get()
+                .uri("/orders/" + orderId + "?newOrder=true")
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
+                .expectBody()
+                .consumeWith(result -> {
+                    assertNotNull(result.getResponseBody());
+                    String body = new String(result.getResponseBodyContent());
+
+                    assertTrue(body.contains("<title>Заказ</title>"), "page title not found in template");
+                    assertTrue(body.contains(String.format("<h2>Заказ №%s</h2>", order.getId())), "order not found in template");
+                });
+    }
+
+
+  @Test
     void createOrder_ShouldRedirectToOrderWithNewOrderTrue() throws Exception {
         UUID userId = UUID.randomUUID();
         UUID orderId = UUID.randomUUID();
-        when(orderService.createOrder(userId)).thenReturn(Optional.of(orderId));
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/orders/new")
-                        .param("userId", userId.toString()))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/orders/" + orderId + "?newOrder=true"));
+        when(orderService.createOrder(userId)).thenReturn(Mono.just(orderId));
 
-        Mockito.verify(orderService).createOrder(userId);
+      webTestClient.post()
+              .uri("/orders/new")
+              .cookie(USER_ID, userId.toString())
+              .exchange()
+              .expectStatus().is3xxRedirection()
+              .expectHeader().valueEquals("Location", "/orders/" + orderId + "?newOrder=true");
     }
 
-    @Test
+     @Test
     void createOrder_ShouldRedirectToCartItemsWhenOrderCreationFails() throws Exception {
         UUID userId = UUID.randomUUID();
-        when(orderService.createOrder(userId)).thenReturn(Optional.empty());
+        when(orderService.createOrder(userId)).thenReturn(Mono.empty());
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/orders/new")
-                        .param("userId", userId.toString()))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/cart/items"));
+         when(orderService.createOrder(userId)).thenReturn(Mono.empty());
 
-        Mockito.verify(orderService).createOrder(userId);
+         webTestClient.post()
+                 .uri("/orders/new")
+                 .cookie(USER_ID, userId.toString())
+                 .exchange()
+                 .expectStatus().is3xxRedirection()
+                 .expectHeader().valueEquals("Location", "/cart/items");
     }
-  */
+
 }

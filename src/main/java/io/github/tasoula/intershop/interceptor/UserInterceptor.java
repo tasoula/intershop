@@ -13,9 +13,6 @@ import reactor.core.publisher.Mono;
 @Component
 public class UserInterceptor implements WebFilter {
 
-    @Value("${cookie.user.id.name}")
-    private String cookieName;
-
     @Value("${cookie.max.age.seconds}")
     private int cookieMaxAge;
 
@@ -27,19 +24,19 @@ public class UserInterceptor implements WebFilter {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
-        HttpCookie cookieUser = exchange.getRequest().getCookies().getFirst(cookieName);
+        HttpCookie cookieUser = exchange.getRequest().getCookies().getFirst(CoockieConst.USER_ID);
         if(cookieUser!=null) {
             String userId = cookieUser.getValue();
             if (userId != null) {
-                exchange.getAttributes().put(cookieName, userId); // Сохраняем userId в атрибутах запроса
+                exchange.getAttributes().put(CoockieConst.USER_ID, userId); // Сохраняем userId в атрибутах запроса
                 return Mono.just(userId).then(chain.filter(exchange));
             }
         }
         else {
             return service.createUser()
                     .map(userId -> {
-                        exchange.getAttributes().put(cookieName, userId.toString()); // Сохраняем userId в атрибутах запроса
-                        ResponseCookie cookie = ResponseCookie.from(cookieName, userId.toString())
+                        exchange.getAttributes().put(CoockieConst.USER_ID, userId.toString()); // Сохраняем userId в атрибутах запроса
+                        ResponseCookie cookie = ResponseCookie.from(CoockieConst.USER_ID, userId.toString())
                                 .path("/")
                                 .httpOnly(true)
                                 .maxAge(cookieMaxAge)

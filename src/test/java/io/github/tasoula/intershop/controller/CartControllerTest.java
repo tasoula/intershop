@@ -1,29 +1,40 @@
 package io.github.tasoula.intershop.controller;
 
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import io.github.tasoula.intershop.dto.ProductDto;
+import io.github.tasoula.intershop.enums.CartAction;
+import io.github.tasoula.intershop.interceptor.UserInterceptor;
+import io.github.tasoula.intershop.service.CartService;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.reactive.server.FluxExchangeResult;
+import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.UUID;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static io.github.tasoula.intershop.interceptor.CoockieConst.USER_ID;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.when;
 
-//@WebMvcTest(value = CartController.class,
-  //      excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = WebConfig.class))
+@WebFluxTest(value = CartController.class,
+        excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = UserInterceptor.class))
 class CartControllerTest {
 
-  /*  @Value("${cookie.user.id.name}")
-    private String cookieName;
-
     @Autowired
-    MockMvc mockMvc;
+    private WebTestClient webTestClient;
 
     @MockitoBean
-    CartService cartService;
-    @MockitoBean
-    UserInterceptor userInterceptor;
+    private CartService cartService;
+
 
     @Test
     void viewCart_shouldReturnCartViewWithItemsAndTotal() throws Exception {
@@ -37,16 +48,28 @@ class CartControllerTest {
                                                 2));
         BigDecimal total = BigDecimal.valueOf(200.0);
 
-        when(cartService.findByUserId(userId)).thenReturn(items);
-        when(cartService.calculateTotalPriceByUserId(userId)).thenReturn(total);
+        when(cartService.findByUserId(userId)).thenReturn(Flux.fromIterable(items));
+        when(cartService.calculateTotalPriceByUserId(userId)).thenReturn(Mono.just(total));
 
-        mockMvc.perform(get("/cart/items")
-                        .param("userId", userId.toString()))
-                .andExpect(status().isOk())
-                .andExpect(view().name("cart.html"))
-                .andExpect(model().attribute("items", items))
-                .andExpect(model().attribute("empty", false))
-                .andExpect(model().attribute("total", total));
+        webTestClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/cart/items")
+                        .queryParam("userId", userId.toString())
+                        .build())
+                .cookie(USER_ID, userId.toString())
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
+                .expectBody()
+                .consumeWith(result -> {
+                    assertNotNull(result.getResponseBody());
+                    String body = new String(result.getResponseBodyContent());
+                    assertTrue(body.contains("<title>Корзина товаров</title>"), "page title not found in template");
+                    assertTrue(body.contains(items.getFirst().getTitle()), "product1 not found in template");
+                    assertTrue(body.contains("<b>100.0 руб.</b>"), "product1 price not found in template");
+                    assertTrue(body.contains("<b id=\"total-price\">Итого: 200.0 руб.</b>"), "total summ not found in template");
+
+                });
     }
 
 
@@ -56,121 +79,122 @@ class CartControllerTest {
         List<ProductDto> items = List.of();
         BigDecimal total = BigDecimal.ZERO;
 
-        when(cartService.findByUserId(userId)).thenReturn(items);
-        when(cartService.calculateTotalPriceByUserId(userId)).thenReturn(total);
-        mockMvc.perform(get("/cart/items")
-                        .param("userId", userId.toString()))
-                .andExpect(status().isOk())
-                .andExpect(view().name("cart.html"))
-                .andExpect(model().attribute("items", items))
-                .andExpect(model().attribute("total", total))
-                .andExpect(model().attribute("empty", true));
+        when(cartService.findByUserId(userId)).thenReturn(Flux.fromIterable(items));
+        when(cartService.calculateTotalPriceByUserId(userId)).thenReturn(Mono.just(total));
+
+        webTestClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/cart/items")
+                        .queryParam("userId", userId.toString())
+                        .build())
+                .cookie(USER_ID, userId.toString())
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
+                .expectBody()
+                .consumeWith(result -> {
+                    assertNotNull(result.getResponseBody());
+                    String body = new String(result.getResponseBodyContent());
+                    assertTrue(body.contains("<title>Корзина товаров</title>"), "page title not found in template");
+                    assertTrue(body.contains("<b id=\"total-price\">Итого: 0 руб.</b>"), "total summ not found in template");
+
+                });
     }
 
     @Test
-    void changeProductQuantityInCart_shouldDeleteCartItem() throws Exception {
-        // Arrange
+    void getTotal_returnsTotalPrice() {
+        UUID userId = UUID.randomUUID();
+        BigDecimal total = BigDecimal.valueOf(42.50);
+
+        when(cartService.calculateTotalPriceByUserId(userId)).thenReturn(Mono.just(total));
+
+        webTestClient.get()
+                .uri("/cart/total")
+                .cookie(USER_ID, userId.toString())
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(BigDecimal.class)
+                .isEqualTo(total);
+    }
+
+    @Test
+    void isEmpty_returnsTrueWhenCartIsEmpty() {
+        UUID userId = UUID.randomUUID();
+
+        when(cartService.isEmpty(userId)).thenReturn(Mono.just(true));
+
+        webTestClient.get()
+                .uri("/cart/is_empty")
+                .cookie(USER_ID, userId.toString())
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(Boolean.class)
+                .isEqualTo(true);
+    }
+
+    @Test
+    void isEmpty_returnsFalseWhenCartIsNotEmpty() {
+        UUID userId = UUID.randomUUID();
+
+        when(cartService.isEmpty(userId)).thenReturn(Mono.just(false));
+
+        webTestClient.get()
+                .uri("/cart/is_empty")
+                .cookie(USER_ID, userId.toString())
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(Boolean.class)
+                .isEqualTo(false);
+    }
+
+    @Test
+    void changeProductQuantityInCart_plusAction_returnsUpdatedQuantity() {
+        UUID userId = UUID.randomUUID();
+        UUID productId = UUID.randomUUID();
+        int updatedQuantity = 5;
+
+        when(cartService.changeProductQuantityInCart(userId, productId, 1)).thenReturn(Mono.just(updatedQuantity));
+
+        webTestClient.post()
+                .uri("/cart/items/{id}?action=PLUS", productId)
+                .cookie(USER_ID, userId.toString())
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(Integer.class)
+                .isEqualTo(updatedQuantity);
+    }
+
+    @Test
+    void changeProductQuantityInCart_minusAction_returnsUpdatedQuantity() {
+        UUID userId = UUID.randomUUID();
+        UUID productId = UUID.randomUUID();
+        int updatedQuantity = 3;
+
+        when(cartService.changeProductQuantityInCart(userId, productId, -1)).thenReturn(Mono.just(updatedQuantity));
+
+        webTestClient.post()
+                .uri("/cart/items/{id}?action=MINUS", productId)
+                .cookie(USER_ID, userId.toString())
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(Integer.class)
+                .isEqualTo(updatedQuantity);
+    }
+
+    @Test
+    void changeProductQuantityInCart_deleteAction_returnsOkZero() {
         UUID userId = UUID.randomUUID();
         UUID productId = UUID.randomUUID();
 
-        // Act & Assert
-        mockMvc.perform(post("/cart/items/{id}", productId)
-                        .param("action", CartAction.DELETE.name())
-                        .param("userId", userId.toString()))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(content().string("0"));
+        when(cartService.deleteCartItem(userId, productId)).thenReturn(Mono.empty());
+
+        webTestClient.post()
+                .uri("/cart/items/{id}?action=DELETE", productId)
+                .cookie(USER_ID, userId.toString())
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(Integer.class)
+                .isEqualTo(0);
     }
 
-
-    @Test
-    void changeProductQuantityInCart_shouldIncrementQuantity() throws Exception {
-        // Arrange
-        UUID userId = UUID.randomUUID();
-        UUID productId = UUID.randomUUID();
-        int newQuantity = 2;
-
-        when(cartService.changeProductQuantityInCart(eq(userId), eq(productId), eq(1))).thenReturn(newQuantity);
-
-        // Act & Assert
-        mockMvc.perform(post("/cart/items/{id}", productId)
-                        .param("action", CartAction.PLUS.name())
-                        .param("userId", userId.toString()))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(content().string("2"));
-    }
-
-    @Test
-    void changeProductQuantityInCart_shouldDecrementQuantity() throws Exception {
-        UUID userId = UUID.randomUUID();
-        UUID productId = UUID.randomUUID();
-        int newQuantity = 1;
-
-        when(cartService.changeProductQuantityInCart(eq(userId), eq(productId), eq(-1))).thenReturn(newQuantity);
-        mockMvc.perform(post("/cart/items/{id}", productId)
-                        .param("action", CartAction.MINUS.name())
-                        .param("userId", userId.toString()))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(content().string("1"));
-    }
-
-    @Test
-    void getTotal_ReturnsTotalPriceFromCartService() throws Exception {
-        // Arrange
-        UUID userId = UUID.randomUUID();
-        BigDecimal totalPrice = BigDecimal.TEN;
-
-        when(cartService.calculateTotalPriceByUserId(userId)).thenReturn(totalPrice);
-        when(userInterceptor.preHandle(any(), any(), any())).thenReturn(true);
-
-        // Act & Assert
-        mockMvc.perform(get("/cart/total")
-                        .param("userId", userId.toString()))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(content().string(totalPrice.toString()));
-
-        Mockito.verify(cartService).calculateTotalPriceByUserId(userId);
-    }
-
-    @Test
-    void isEmpty_ReturnsTrueIfCartIsEmpty() throws Exception {
-        // Arrange
-        UUID userId = UUID.randomUUID();
-
-        when(cartService.isEmpty(userId)).thenReturn(true);
-        when(userInterceptor.preHandle(any(), any(), any())).thenReturn(true);
-
-        // Act & Assert
-        mockMvc.perform(get("/cart/is_empty")
-                        .param("userId", userId.toString()))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(content().string("true"));
-
-        Mockito.verify(cartService).isEmpty(userId);
-    }
-
-    @Test
-    void isEmpty_ReturnsFalseIfCartIsNotEmpty() throws Exception {
-        // Arrange
-        UUID userId = UUID.randomUUID();
-
-        when(cartService.isEmpty(userId)).thenReturn(false);
-        when(userInterceptor.preHandle(any(), any(), any())).thenReturn(true);
-
-
-        // Act & Assert
-        mockMvc.perform(get("/cart/is_empty")
-                        .param("userId", userId.toString()))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(content().string("false"));
-
-        Mockito.verify(cartService).isEmpty(userId);
-    }
-
-   */
 }

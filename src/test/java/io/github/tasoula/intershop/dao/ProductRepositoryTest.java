@@ -102,5 +102,4 @@ class ProductRepositoryTest extends SpringBootPostgreSQLBase{
                 .withFailMessage("Файл изображения должен быть")
                 .isEqualTo(product1.getImgPath());
     }
-
 }
