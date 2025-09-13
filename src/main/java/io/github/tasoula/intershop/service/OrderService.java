@@ -56,14 +56,7 @@ public class OrderService {
                         return Mono.empty();
                     }
                     return checkStockAvailability(cartItems)
-                            .flatMap(allInStock -> {
-                                if (!allInStock) {
-                                    // Если какого-то товара нет в нужном количестве, возвращаем пустой Mono
-                                    return Mono.empty();
-                                }
-                                // Создаем заказ и сохраняем его
-                                return createAndSaveOrder(userId, cartItems);
-                            });
+                            .flatMap(allInStock -> (allInStock) ? createAndSaveOrder(userId, cartItems) : Mono.empty());
                 });
     }
 
@@ -86,18 +79,19 @@ public class OrderService {
                     // Создаем элементы заказа и обновляем количество товара на складе
                     return saveOrderItemsAndUpdateStock(cartItems, orderId)
                             .flatMap(orderItems -> {
-                                // Вычисляем общую сумму заказа
-                                BigDecimal totalAmount = orderItems.stream()
-                                        .map(item -> item.getPriceAtTimeOfOrder().multiply(BigDecimal.valueOf(item.getQuantity())))
-                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-                                savedOrder.setTotalAmount(totalAmount);
+                                savedOrder.setTotalAmount(countTotalAmount(orderItems));
                                 // Сохраняем обновленный заказ, очищаем корзину и возвращаем ID заказа
                                 return orderRepository.save(savedOrder)
                                         .then(cartItemRepository.deleteByUserId(userId))
                                         .thenReturn(orderId);
                             });
                 });
+    }
+
+    private BigDecimal countTotalAmount(List<OrderItem> orderItems){
+        return orderItems.stream()
+                .map(item -> item.getPriceAtTimeOfOrder().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     private Mono<List<OrderItem>> saveOrderItemsAndUpdateStock(List<CartItem> cartItems, UUID orderId) {
