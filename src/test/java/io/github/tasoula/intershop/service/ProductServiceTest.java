@@ -161,10 +161,11 @@ public class ProductServiceTest {
 
     @Test
     void createProduct_savesProductAndImage() {
-        String title = "New Product";
-        String description = "Description";
-        BigDecimal price = BigDecimal.valueOf(100);
-        int stockQuantity = 10;
+        ProductDto productDto = new ProductDto();
+        productDto.setTitle("New Product");
+        productDto.setDescription("Description");
+        productDto.setPrice(BigDecimal.valueOf(100));
+        productDto.setStockQuantity(10);
 
         FilePart image = mock(FilePart.class);
         when(image.filename()).thenReturn("image.png");
@@ -173,10 +174,10 @@ public class ProductServiceTest {
 
         Product savedProduct = new Product();
         savedProduct.setId(UUID.randomUUID());
-        savedProduct.setTitle(title);
-        savedProduct.setDescription(description);
-        savedProduct.setPrice(price);
-        savedProduct.setStockQuantity(stockQuantity);
+        savedProduct.setTitle(productDto.getTitle());
+        savedProduct.setDescription(productDto.getDescription());
+        savedProduct.setPrice(productDto.getPrice());
+        savedProduct.setStockQuantity(productDto.getStockQuantity());
         savedProduct.setImgPath("some_filename.png");
 
         // Мокаем сохранение продукта, возвращаем savedProduct
@@ -189,7 +190,7 @@ public class ProductServiceTest {
         // Мокаем сохранение изображения
         when(imageService.saveToDisc(any(FilePart.class), anyString())).thenReturn(Mono.empty());
 
-        Mono<Void> result = productService.createProduct(title, description, image, price, stockQuantity);
+        Mono<Void> result = productService.createProduct(productDto, image);
 
         StepVerifier.create(result)
                 .verifyComplete();
@@ -198,10 +199,10 @@ public class ProductServiceTest {
         Product productToSave = productCaptor.getValue();
 
         // Проверяем, что поля установлены
-        assert productToSave.getTitle().equals(title);
-        assert productToSave.getDescription().equals(description);
-        assert productToSave.getPrice().equals(price);
-        assert productToSave.getStockQuantity() == stockQuantity;
+        assert productToSave.getTitle().equals(productDto.getTitle());
+        assert productToSave.getDescription().equals(productDto.getDescription());
+        assert productToSave.getPrice().equals(productDto.getPrice());
+        assert productToSave.getStockQuantity() == productDto.getStockQuantity();
         assert productToSave.getImgPath() != null && productToSave.getImgPath().contains("image.png");
 
         verify(imageService).saveToDisc(eq(image), eq(productToSave.getImgPath()));

@@ -88,13 +88,8 @@ public class ProductController {
     @PostMapping(value = "products", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public Mono<String> createProduct(@RequestPart("image") Mono<FilePart> image,
                                       @ModelAttribute ProductDto productDto) {
-
-        String title = productDto.getTitle();
-        String description = productDto.getDescription();
-        BigDecimal price = productDto.getPrice();
-        int stockQuantity = productDto.getStockQuantity();
-                return image.flatMap(filePart -> {
-                    return service.createProduct(title, description, filePart, price, stockQuantity)
+        return image.flatMap(filePart -> {
+                    return service.createProduct(productDto, filePart)
                             .thenReturn("redirect:/catalog/items"); //  Возвращаем строку для редиректа
                 })
                 .onErrorResume(e -> {
