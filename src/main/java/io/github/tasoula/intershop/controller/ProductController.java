@@ -2,7 +2,6 @@ package io.github.tasoula.intershop.controller;
 
 import io.github.tasoula.intershop.dto.ProductDto;
 import io.github.tasoula.intershop.service.ProductService;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -14,11 +13,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
-import java.math.BigDecimal;
 import java.net.URI;
 import java.util.UUID;
 
-import static io.github.tasoula.intershop.interceptor.CoockieConst.USER_ID;
+import static io.github.tasoula.intershop.interceptor.CookieConst.USER_ID;
 
 @Controller
 @RequestMapping("/catalog")

@@ -15,7 +15,7 @@ import java.util.UUID;
 public class UserService {
 
     @Value("${cookie.max.age.seconds}")
-    private int coockieMaxAge;
+    private int cookieMaxAge;
 
     private final UserRepository repository;
 
@@ -31,7 +31,7 @@ public class UserService {
    // @Scheduled(fixedDelay = 30000) Каждые 30 секунд (для тестирования)
     @Transactional
     public Mono<Void> deleteExpiredUsers() {
-        Timestamp expirationTime = new Timestamp( System.currentTimeMillis() - (coockieMaxAge * 1000L));
+        Timestamp expirationTime = new Timestamp( System.currentTimeMillis() - (cookieMaxAge * 1000L));
         return repository.deleteByCreatedAtBefore(expirationTime);//.subscribe();
     }
 
