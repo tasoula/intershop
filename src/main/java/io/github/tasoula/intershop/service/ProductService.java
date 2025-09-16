@@ -58,16 +58,12 @@ public class ProductService {
     }
 
     @Transactional
-    public Mono<Void> createProduct(String title,
-                                    String description,
-                                    FilePart image,
-                                    BigDecimal price,
-                                    int stockQuantity) {
+    public Mono<Void> createProduct(ProductDto productDto, FilePart image) {
         Product product = new Product();
-        product.setTitle(title);
-        product.setDescription(description);
-        product.setPrice(price);
-        product.setStockQuantity(stockQuantity);
+        product.setTitle(productDto.getTitle());
+        product.setDescription(productDto.getDescription());
+        product.setPrice(productDto.getPrice());
+        product.setStockQuantity(productDto.getStockQuantity());
         String filename = UUID.randomUUID() + "_" + image.filename();
         product.setImgPath(filename);
 
