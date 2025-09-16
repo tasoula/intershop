@@ -2,7 +2,6 @@ package io.github.tasoula.intershop.controller;
 
 import io.github.tasoula.intershop.dto.ProductDto;
 import io.github.tasoula.intershop.service.ProductService;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -14,11 +13,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
-import java.math.BigDecimal;
 import java.net.URI;
 import java.util.UUID;
 
-import static io.github.tasoula.intershop.interceptor.CoockieConst.USER_ID;
+import static io.github.tasoula.intershop.interceptor.CookieConst.USER_ID;
 
 @Controller
 @RequestMapping("/catalog")
@@ -88,13 +86,8 @@ public class ProductController {
     @PostMapping(value = "products", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public Mono<String> createProduct(@RequestPart("image") Mono<FilePart> image,
                                       @ModelAttribute ProductDto productDto) {
-
-        String title = productDto.getTitle();
-        String description = productDto.getDescription();
-        BigDecimal price = productDto.getPrice();
-        int stockQuantity = productDto.getStockQuantity();
-                return image.flatMap(filePart -> {
-                    return service.createProduct(title, description, filePart, price, stockQuantity)
+        return image.flatMap(filePart -> {
+                    return service.createProduct(productDto, filePart)
                             .thenReturn("redirect:/catalog/items"); //  Возвращаем строку для редиректа
                 })
                 .onErrorResume(e -> {

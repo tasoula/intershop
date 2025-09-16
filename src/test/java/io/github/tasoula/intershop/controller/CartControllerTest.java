@@ -1,7 +1,6 @@
 package io.github.tasoula.intershop.controller;
 
 import io.github.tasoula.intershop.dto.ProductDto;
-import io.github.tasoula.intershop.enums.CartAction;
 import io.github.tasoula.intershop.interceptor.UserInterceptor;
 import io.github.tasoula.intershop.service.CartService;
 import org.junit.jupiter.api.Test;
@@ -11,7 +10,6 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.reactive.server.FluxExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -20,7 +18,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
-import static io.github.tasoula.intershop.interceptor.CoockieConst.USER_ID;
+import static io.github.tasoula.intershop.interceptor.CookieConst.USER_ID;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;

@@ -32,8 +32,8 @@ public class UserServiceTest {
 
     @BeforeEach
     void setUp() {
-        // Устанавливаем значение coockieMaxAge через ReflectionTestUtils, так как внедрение через @Value в тестах может быть сложным
-        ReflectionTestUtils.setField(userService, "coockieMaxAge", 3600); // Пример: 3600 секунд (1 час)
+        // Устанавливаем значение cookieMaxAge через ReflectionTestUtils, так как внедрение через @Value в тестах может быть сложным
+        ReflectionTestUtils.setField(userService, "cookieMaxAge", 3600); // Пример: 3600 секунд (1 час)
     }
 
     @Test
@@ -54,9 +54,9 @@ public class UserServiceTest {
     @Test
     void deleteExpiredUsers_shouldDeleteUsersCreatedBeforeExpirationTime() {
         // Arrange
-        long coockieMaxAgeSeconds = 3600; // Значение должно совпадать с установленным в @BeforeEach
+        long cookieMaxAgeSeconds = 3600; // Значение должно совпадать с установленным в @BeforeEach
         long currentTimeMillis = System.currentTimeMillis();
-        long expirationTimeMillis = currentTimeMillis - (coockieMaxAgeSeconds * 1000L);
+        long expirationTimeMillis = currentTimeMillis - (cookieMaxAgeSeconds * 1000L);
         Timestamp expirationTimestamp = new Timestamp(expirationTimeMillis);
 
         // Act

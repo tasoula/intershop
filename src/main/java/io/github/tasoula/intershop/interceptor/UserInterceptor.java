@@ -24,19 +24,19 @@ public class UserInterceptor implements WebFilter {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
-        HttpCookie cookieUser = exchange.getRequest().getCookies().getFirst(CoockieConst.USER_ID);
+        HttpCookie cookieUser = exchange.getRequest().getCookies().getFirst(CookieConst.USER_ID);
         if(cookieUser!=null) {
             String userId = cookieUser.getValue();
             if (userId != null) {
-                exchange.getAttributes().put(CoockieConst.USER_ID, userId); // Сохраняем userId в атрибутах запроса
+                exchange.getAttributes().put(CookieConst.USER_ID, userId); // Сохраняем userId в атрибутах запроса
                 return Mono.just(userId).then(chain.filter(exchange));
             }
         }
         else {
             return service.createUser()
                     .map(userId -> {
-                        exchange.getAttributes().put(CoockieConst.USER_ID, userId.toString()); // Сохраняем userId в атрибутах запроса
-                        ResponseCookie cookie = ResponseCookie.from(CoockieConst.USER_ID, userId.toString())
+                        exchange.getAttributes().put(CookieConst.USER_ID, userId.toString()); // Сохраняем userId в атрибутах запроса
+                        ResponseCookie cookie = ResponseCookie.from(CookieConst.USER_ID, userId.toString())
                                 .path("/")
                                 .httpOnly(true)
                                 .maxAge(cookieMaxAge)

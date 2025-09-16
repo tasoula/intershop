@@ -11,7 +11,7 @@ import reactor.core.publisher.Mono;
 import java.math.BigDecimal;
 import java.util.UUID;
 
-import static io.github.tasoula.intershop.interceptor.CoockieConst.USER_ID;
+import static io.github.tasoula.intershop.interceptor.CookieConst.USER_ID;
 
 @Controller
 @RequestMapping("/cart")

@@ -18,7 +18,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
-import static io.github.tasoula.intershop.interceptor.CoockieConst.USER_ID;
+import static io.github.tasoula.intershop.interceptor.CookieConst.USER_ID;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
