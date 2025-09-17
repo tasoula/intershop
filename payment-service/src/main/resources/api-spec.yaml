@@ -1,0 +1,157 @@
+openapi: 3.0.0
+info:
+  title: Сервис платежей
+  version: 1.0.0
+  description: RESTful API для управления балансом пользователя и осуществления платежей.
+
+servers:
+  - url: http://localhost:8081  # Замените на фактический URL вашего сервиса
+
+paths:
+  /balance/{userId}:
+    get:
+      summary: Получить баланс пользователя
+      description: Возвращает текущий баланс пользователя.  Баланс генерируется случайным образом.
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID пользователя
+      responses:
+        '200':
+          description: Успешный запрос. Возвращает баланс пользователя.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId: #todo нужен ли нам в ответе userId? если да, то может лучше сделат User с userId и balance?
+                    type: string
+                    format: uuid
+                    description: UUID пользователя
+                  balance:
+                    type: number
+                    format: float
+                    description: Текущий баланс пользователя
+                required:
+                  - userId
+                  - balance
+        '400':
+          description: Некорректный запрос (например, неверный формат UUID).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Описание ошибки
+                required:
+                  - error
+        '500':
+          description: Внутренняя ошибка сервера.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Описание ошибки
+                required:
+                  - error
+
+  /payment/{userId}:
+    post:
+      summary: Осуществить платеж
+      description: Вычитает указанную сумму из баланса пользователя.
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: #Определение структуры тела запроса (объект с полем amount). Может нам нужен тольк amount?
+              type: object
+              properties:
+                amount:        #дальше могли съехать отступы
+                  type: number
+                  format: float
+                  description: Сумма платежа
+              required:
+                - amount
+      responses:
+        '200':
+          description: Платеж успешно выполнен.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: string
+                    format: uuid
+                    description: UUID пользователя
+                  newBalance:
+                    type: number
+                    format: float
+                    description: Новый баланс пользователя после платежа
+                required:
+                  - userId
+                  - newBalance
+        '400':
+          description: Некорректный запрос (например, неверный формат UUID или отрицательная сумма).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Описание ошибки
+                required:
+                  - error
+        '402':
+          description: Недостаточно средств для осуществления платежа.  Код ошибки `402 Payment Required`
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Описание ошибки
+                required:
+                  - error
+        '500':
+          description: Внутренняя ошибка сервера.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Описание ошибки
+                required:
+                  - error
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Описание ошибки.
+      required:
+        - error

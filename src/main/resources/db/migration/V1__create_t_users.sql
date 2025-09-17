@@ -1,4 +1,0 @@
-CREATE TABLE t_users(
-	id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);

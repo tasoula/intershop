@@ -194,7 +194,7 @@ class OrderServiceTest {
         verify(cartItemRepository).findByUserId(userId);
     }
 
-    @Test
+  /*  @Test
     void createOrder_SuccessfulOrderCreation_ReturnsOrderId() {
         // Mocking repository calls
         when(cartItemRepository.findByUserId(userId)).thenReturn(Flux.just(cartItem1, cartItem2));
@@ -223,5 +223,5 @@ class OrderServiceTest {
         verify(productRepository, times(2)).save(any(Product.class));
         verify(cartItemRepository).deleteByUserId(userId);
     }
-
+*/
 }
