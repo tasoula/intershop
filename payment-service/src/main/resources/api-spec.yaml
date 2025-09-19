@@ -11,7 +11,7 @@ paths:
   /balance/{userId}:
     get:
       summary: Получить баланс пользователя
-      description: Возвращает текущий баланс пользователя.  Баланс генерируется случайным образом.
+      description: Возвращает текущий баланс пользователя.  Начальный баланс фиксированный.
       parameters:
         - in: path
           name: userId
@@ -26,43 +26,19 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  userId: #todo нужен ли нам в ответе userId? если да, то может лучше сделат User с userId и balance?
-                    type: string
-                    format: uuid
-                    description: UUID пользователя
-                  balance:
-                    type: number
-                    format: float
-                    description: Текущий баланс пользователя
-                required:
-                  - userId
-                  - balance
+                $ref: '#/components/schemas/Amount'
         '400':
           description: Некорректный запрос (например, неверный формат UUID).
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    description: Описание ошибки
-                required:
-                  - error
+                $ref: '#/components/schemas/Error'
         '500':
           description: Внутренняя ошибка сервера.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    description: Описание ошибки
-                required:
-                  - error
+                $ref: '#/components/schemas/Error'
 
   /payment/{userId}:
     post:
@@ -80,71 +56,29 @@ paths:
         required: true
         content:
           application/json:
-            schema: #Определение структуры тела запроса (объект с полем amount). Может нам нужен тольк amount?
-              type: object
-              properties:
-                amount:        #дальше могли съехать отступы
-                  type: number
-                  format: float
-                  description: Сумма платежа
-              required:
-                - amount
+            schema:
+              $ref: '#/components/schemas/Amount'
       responses:
         '200':
           description: Платеж успешно выполнен.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  userId:
-                    type: string
-                    format: uuid
-                    description: UUID пользователя
-                  newBalance:
-                    type: number
-                    format: float
-                    description: Новый баланс пользователя после платежа
-                required:
-                  - userId
-                  - newBalance
         '400':
           description: Некорректный запрос (например, неверный формат UUID или отрицательная сумма).
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    description: Описание ошибки
-                required:
-                  - error
+                $ref: '#/components/schemas/Error'
         '402':
           description: Недостаточно средств для осуществления платежа.  Код ошибки `402 Payment Required`
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    description: Описание ошибки
-                required:
-                  - error
+                $ref: '#/components/schemas/Error'
         '500':
           description: Внутренняя ошибка сервера.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    description: Описание ошибки
-                required:
-                  - error
-
+                $ref: '#/components/schemas/Error'
 components:
   schemas:
     Error:
@@ -155,3 +89,13 @@ components:
           description: Описание ошибки.
       required:
         - error
+    Amount:
+      type: object
+      properties:
+        amount:
+          type: string
+          format: decimal
+          description: Сумма денег (число с фиксированной точкой, 2 знака после запятой)
+          pattern: "^-?\\d+(\\.\\d{1,2})?$"
+      required:
+        - amount
