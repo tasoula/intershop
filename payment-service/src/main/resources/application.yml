@@ -1,2 +1,20 @@
 server:
   port: 8081
+
+spring:
+  application:
+    name: Internet Shop
+
+  sql:
+    init:
+      mode: always
+
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5432/payment-service-db
+    username: ${INTERSHOP_DB_USERNAME}
+    password: ${INTERSHOP_DB_PASSWORD}
+
+    pool:
+      max-size: 20
+      initial-size: 10
+      validation-query: SELECT 1 # Проверка доступности соединения

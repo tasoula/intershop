@@ -31,8 +31,7 @@ openApiGenerate {
     apiPackage.set("io.github.tasoula.server.api")
     configOptions.set([
             hideGenerationTimestamp: "true",
-            //requestMappingMode: "controller", //переделать на RestController
-            interfaceOnly: "false",
+            interfaceOnly: "true",
             library: "spring-boot",
             reactive: "true",
             useSpringBoot3: "true",
@@ -45,7 +44,7 @@ openApiGenerate {
     ])
 }
 
-sourceSets.main.java.srcDir "$projectDir/build/generated/src/main/java"
+sourceSets.main.java.srcDir  "$projectDir/build/generated/src/main/java"
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
@@ -53,8 +52,15 @@ dependencies {
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.4.3'
     implementation 'jakarta.validation:jakarta.validation-api:3.1.1'
     implementation 'io.swagger.core.v3:swagger-annotations:2.2.28'
+    implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
+    runtimeOnly 'org.postgresql:r2dbc-postgresql'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'io.projectreactor:reactor-test'
+    testImplementation "org.testcontainers:r2dbc"
+    testImplementation 'org.testcontainers:junit-jupiter'
+    testImplementation 'org.testcontainers:postgresql'
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
 }
 
 tasks.named('test') {
