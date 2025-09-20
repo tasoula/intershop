@@ -33,12 +33,13 @@ public class OrderService {
     private final OrderItemRepository orderItemRepository;
     private final CartItemRepository cartItemRepository;
     private final ProductRepository productRepository;
-
+    private final WebClient webClient;
     public OrderService(OrderRepository orderRepository, OrderItemRepository orderItemRepository, CartItemRepository cartItemRepository, ProductRepository productRepository) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.cartItemRepository = cartItemRepository;
         this.productRepository = productRepository;
+        this.webClient = WebClient.create("http://localhost:8081");
     }
 
     public Mono<OrderDto> getById(UUID id) {
@@ -76,8 +77,6 @@ public class OrderService {
     }
 
     public Mono<Void> processPayment(UUID userId, BigDecimal totalAmount) {
-        WebClient webClient = WebClient.create("http://localhost:8081"); //todo сделать общий клиент
-
         Amount amountRequest = new Amount();
         amountRequest.setAmount(totalAmount);
 

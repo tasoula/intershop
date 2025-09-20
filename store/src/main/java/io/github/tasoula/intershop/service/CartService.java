@@ -21,9 +21,12 @@ public class CartService {
     private final CartItemRepository cartItemRepository;
     private final ProductRepository productRepository;
 
+    private final WebClient webClient;
+
     public CartService(CartItemRepository cartItemRepository, ProductRepository productRepository) {
         this.cartItemRepository = cartItemRepository;
         this.productRepository = productRepository;
+        this.webClient = WebClient.create("http://localhost:8081");
     }
 
     public Flux<ProductDto> findByUserId(UUID userId) {
@@ -81,8 +84,6 @@ public class CartService {
     }
 
     public Mono<Boolean> isAvailable(UUID userId) {
-        WebClient webClient = WebClient.create("http://localhost:8081"); //todo сделать общий клиент
-
         return calculateTotalPriceByUserId(userId)
                 .flatMap(totalCartPrice ->
                         webClient.get()
