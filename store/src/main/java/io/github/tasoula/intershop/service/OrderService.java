@@ -1,16 +1,22 @@
 package io.github.tasoula.intershop.service;
 
+import io.github.tasoula.client.domain.Amount;
 import io.github.tasoula.intershop.dao.CartItemRepository;
 import io.github.tasoula.intershop.dao.OrderItemRepository;
 import io.github.tasoula.intershop.dao.OrderRepository;
 import io.github.tasoula.intershop.dao.ProductRepository;
 import io.github.tasoula.intershop.dto.OrderDto;
 import io.github.tasoula.intershop.dto.ProductDto;
+import io.github.tasoula.intershop.exceptions.PaymentException;
 import io.github.tasoula.intershop.model.CartItem;
 import io.github.tasoula.intershop.model.Order;
 import io.github.tasoula.intershop.model.OrderItem;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.ErrorResponse;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -18,6 +24,7 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 
 @Service
@@ -68,6 +75,37 @@ public class OrderService {
                 .all(Boolean::booleanValue); // Проверяем, что все продукты есть в нужном количестве
     }
 
+    public Mono<Void> processPayment(UUID userId, BigDecimal totalAmount) {
+        WebClient webClient = WebClient.create("http://localhost:8081"); //todo сделать общий клиент
+
+        Amount amountRequest = new Amount();
+        amountRequest.setAmount(totalAmount);
+
+        return webClient.post()
+                .uri("/payment/" + userId.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(amountRequest)
+                .exchangeToMono(response -> {
+                    if (response.statusCode().equals(HttpStatus.OK)) {
+                        // Successful payment
+                        return Mono.empty(); // Signal completion without data
+                    } else if (response.statusCode().equals(HttpStatus.PAYMENT_REQUIRED)){
+                        throw new PaymentException("Оплата не прошла (недостаточно средств)");
+                    } else if(response.statusCode().equals(HttpStatus.NOT_FOUND)) {
+                        throw new NoSuchElementException("Оплата не прошла (счет не найден)");
+                    } else {
+                        String errorMessage = "Оплата не прошла";
+                        switch (response.statusCode()){
+                            case HttpStatus.BAD_REQUEST -> errorMessage += " (неверный запрос)";
+                            case HttpStatus.INTERNAL_SERVER_ERROR -> errorMessage += " (внутрення ошибка сервера платежей)";
+                            case null, default -> errorMessage += " (Unexpected status code)";
+                        }
+                        String finalErrorMessage = errorMessage;
+                        throw new RuntimeException(finalErrorMessage);
+                    }
+                });
+    }
+
     private Mono<UUID> createAndSaveOrder(UUID userId, List<CartItem> cartItems) {
         Order order = new Order();
         order.setUserId(userId);
@@ -76,13 +114,16 @@ public class OrderService {
         return orderRepository.save(order)
                 .flatMap(savedOrder -> {
                     UUID orderId = savedOrder.getId();
+
                     // Создаем элементы заказа и обновляем количество товара на складе
                     return saveOrderItemsAndUpdateStock(cartItems, orderId)
                             .flatMap(orderItems -> {
-                                savedOrder.setTotalAmount(countTotalAmount(orderItems));
+                                BigDecimal totalAmount = countTotalAmount(orderItems);
+                                savedOrder.setTotalAmount(totalAmount);
                                 // Сохраняем обновленный заказ, очищаем корзину и возвращаем ID заказа
                                 return orderRepository.save(savedOrder)
                                         .then(cartItemRepository.deleteByUserId(userId))
+                                        .then(processPayment(userId, totalAmount))
                                         .thenReturn(orderId);
                             });
                 });

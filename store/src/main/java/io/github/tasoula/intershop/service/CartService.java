@@ -1,24 +1,19 @@
 package io.github.tasoula.intershop.service;
 
+import io.github.tasoula.client.domain.Amount;
 import io.github.tasoula.intershop.dao.CartItemRepository;
 import io.github.tasoula.intershop.dao.ProductRepository;
 import io.github.tasoula.intershop.dto.ProductDto;
 import io.github.tasoula.intershop.exceptions.ResourceNotFoundException;
 import io.github.tasoula.intershop.model.CartItem;
-import io.github.tasoula.intershop.model.Product;
-import io.github.tasoula.intershop.model.User;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.reactive.TransactionalOperator;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 public class CartService {
@@ -36,7 +31,6 @@ public class CartService {
                 .flatMap(cartItem -> productRepository.findById(cartItem.getProductId())
                         .map(product -> new ProductDto(product, cartItem.getQuantity())));
     }
-
 
     public Mono<Integer> getCartQuantity(UUID userId, UUID productId) {
         if (userId == null) {
@@ -82,4 +76,21 @@ public class CartService {
         return cartItemRepository.existsByUserId(userId).map(exists -> !exists);
     }
 
+    public  Mono<Boolean> enoughMoney(UUID userId) {
+        return Mono.just(false);
+    }
+
+    public Mono<Boolean> isAvailable(UUID userId) {
+        WebClient webClient = WebClient.create("http://localhost:8081"); //todo сделать общий клиент
+
+        return calculateTotalPriceByUserId(userId)
+                .flatMap(totalCartPrice ->
+                        webClient.get()
+                                .uri("/balance/" + userId.toString())
+                                .retrieve()
+                                .bodyToMono(Amount.class)
+                                .map(amount -> amount.getAmount().compareTo(totalCartPrice) >= 0)
+                                .defaultIfEmpty(false) // Обработка случая, когда ответ от сервиса баланса пустой или ошибка
+                );
+    }
 }

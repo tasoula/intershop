@@ -33,6 +33,7 @@ public class CartController {
                             .flatMap(total -> {
                                 model.addAttribute("total", total);
                                 model.addAttribute("empty", items.isEmpty());
+                                model.addAttribute("isAvailable", service.isAvailable(userId));
                                 return Mono.just("cart.html"); // Return the view name as a Mono
                             });
                 });
@@ -47,6 +48,12 @@ public class CartController {
     @GetMapping("is_empty")
     private Mono<ResponseEntity<Boolean>> isEmpty(@CookieValue(USER_ID) UUID userId) {
         return service.isEmpty(userId)
+                .map(ResponseEntity::ok);
+    }
+
+    @GetMapping("is_available")
+    private Mono<ResponseEntity<Boolean>> isAvailable(@CookieValue(USER_ID) UUID userId) {
+        return service.isAvailable(userId)
                 .map(ResponseEntity::ok);
     }
 

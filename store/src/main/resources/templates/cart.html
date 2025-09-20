@@ -65,9 +65,10 @@
 
                 <tr>
                     <td style="text-align:right">
-                        <form th:action="@{/orders/new}" method="post" th:if="${!#lists.isEmpty(items)}" id="new-order-form">
+                        <form th:action="@{/orders/new}" method="post" th:if="${!#lists.isEmpty(items) && isAvailable}" id="new-order-form">
                             <button>Купить</button>
                         </form>
+                        <p class="payment-unavailable" th:if="${!#lists.isEmpty(items) && !isAvailable}">Оплата невозможна</p>
                     </td>
                 </tr>
             </table>

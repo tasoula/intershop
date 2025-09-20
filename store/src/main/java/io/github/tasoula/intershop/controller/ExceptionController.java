@@ -1,6 +1,7 @@
 package io.github.tasoula.intershop.controller;
 
 
+import io.github.tasoula.intershop.exceptions.PaymentException;
 import io.github.tasoula.intershop.exceptions.ResourceNotFoundException;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
@@ -40,6 +41,13 @@ public class ExceptionController {
     public Mono<String> handleIllegalArgumentException() {
         return Mono.just("exceptions/invalid-arguments.html");
     }
+
+    @ExceptionHandler({PaymentException.class})
+    @ResponseStatus(HttpStatus.PAYMENT_REQUIRED)
+    public Mono<String> handlePaymentException() {
+        return Mono.just("exceptions/payment-exception.html");
+    }
+
 
     @ExceptionHandler({Exception.class})
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)

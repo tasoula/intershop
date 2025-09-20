@@ -2,25 +2,21 @@ package io.github.tasoula.payment_service.controller;
 
 import io.github.tasoula.payment_service.exceptions.InsufficientFundsException;
 import io.github.tasoula.payment_service.service.BalanceService;
-import io.github.tasoula.server.api.ApiUtil;
 import io.github.tasoula.server.api.DefaultApi;
 import io.github.tasoula.server.domain.Amount;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.NoSuchElementException;
 import java.util.UUID;
-import java.util.Random;
 
 @RestController
 public class BalanceController implements DefaultApi {

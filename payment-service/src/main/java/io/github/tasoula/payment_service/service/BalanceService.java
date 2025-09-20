@@ -20,7 +20,8 @@ public class BalanceService {
     }
 
     public Mono<BigDecimal> getBalance(UUID userId) {
-        return repository.findBalanceByUserId(userId)
+        return repository.findByUserId(userId)
+                .map(UserBalance::getBalance)
                 .switchIfEmpty(
                         repository.save(new UserBalance(null, userId, BigDecimal.valueOf(10000)))
                                 .map(UserBalance::getBalance)
