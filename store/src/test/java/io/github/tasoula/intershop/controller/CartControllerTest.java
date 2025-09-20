@@ -48,6 +48,7 @@ class CartControllerTest {
 
         when(cartService.findByUserId(userId)).thenReturn(Flux.fromIterable(items));
         when(cartService.calculateTotalPriceByUserId(userId)).thenReturn(Mono.just(total));
+        when(cartService.isAvailable(userId)).thenReturn(Mono.just(true));
 
         webTestClient.get()
                 .uri(uriBuilder -> uriBuilder
