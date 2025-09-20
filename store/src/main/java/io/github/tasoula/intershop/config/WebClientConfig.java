@@ -9,12 +9,12 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Configuration
 public class WebClientConfig {
 
-    @Value("${balance.service.url}") // Получаем базовый URL из application.yml
+    @Value("${balance.service.url}")
     private String balanceServiceUrl;
 
     @Bean
-    WebClientCustomizer mediaTypeCustomizer() {
-        return builder -> builder.baseUrl(balanceServiceUrl);
+    WebClient balanceWebClient(){
+        return WebClient.builder().baseUrl(balanceServiceUrl).build();
     }
 }
 

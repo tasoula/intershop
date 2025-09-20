@@ -25,10 +25,10 @@ public class CartService {
 
     public CartService(CartItemRepository cartItemRepository,
                        ProductRepository productRepository,
-                       WebClient.Builder webClientBuilder) {
+                       WebClient balanceWebClient) {
         this.cartItemRepository = cartItemRepository;
         this.productRepository = productRepository;
-        this.webClient = webClientBuilder.build();
+        this.webClient = balanceWebClient;
     }
 
     public Flux<ProductDto> findByUserId(UUID userId) {
