@@ -18,6 +18,8 @@ public class UserBalance {
 
     private BigDecimal balance;
 
+    public UserBalance() {}
+
     public UserBalance(UUID id, UUID userId, BigDecimal balance) {
         this.id = id;
         this.userId = userId;
@@ -32,22 +34,19 @@ public class UserBalance {
         this.id = id;
     }
 
-    public UserBalance() {}
-
     public UUID getUserId() {
         return userId;
     }
-
+    public void setUserId(UUID userId) {
+        this.userId = userId;
+    }
     public BigDecimal getBalance() {
         return balance;
     }
-
     public void setBalance(BigDecimal balance) {
         this.balance = balance;
     }
 
-    public void setUserId(UUID userId) {
-        this.userId = userId;
-    }
+
 }
 
