@@ -38,12 +38,12 @@ public class OrderService {
                         OrderItemRepository orderItemRepository,
                         CartItemRepository cartItemRepository,
                         ProductRepository productRepository,
-                        WebClient.Builder webClientBuilder) {
+                        WebClient balanceWebClient) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.cartItemRepository = cartItemRepository;
         this.productRepository = productRepository;
-        this.webClient = webClientBuilder.build();
+        this.webClient = balanceWebClient;
     }
 
     public Mono<OrderDto> getById(UUID id) {

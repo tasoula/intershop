@@ -8,12 +8,14 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.*;
+import java.util.function.Function;
 
 import io.github.tasoula.intershop.dao.CartItemRepository;
 import io.github.tasoula.intershop.dao.OrderItemRepository;
 import io.github.tasoula.intershop.dao.OrderRepository;
 import io.github.tasoula.intershop.dao.ProductRepository;
 import io.github.tasoula.intershop.dto.OrderDto;
+import io.github.tasoula.intershop.exceptions.PaymentException;
 import io.github.tasoula.intershop.model.*;
 import io.github.tasoula.intershop.service.OrderService;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +24,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.web.reactive.function.client.ClientResponse;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -36,6 +42,18 @@ class OrderServiceTest {
     private CartItemRepository cartItemRepository;
     @Mock
     private ProductRepository productRepository;
+
+    @Mock
+    private WebClient webClient;
+
+    @Mock
+    private WebClient.RequestBodyUriSpec requestBodyUriSpec;
+
+    @Mock
+    private WebClient.RequestHeadersSpec requestHeadersSpec;
+
+    @Mock
+    private WebClient.ResponseSpec responseSpec;
 
     @InjectMocks
     private OrderService orderService;
@@ -194,7 +212,7 @@ class OrderServiceTest {
         verify(cartItemRepository).findByUserId(userId);
     }
 
-  /*  @Test
+    @Test
     void createOrder_SuccessfulOrderCreation_ReturnsOrderId() {
         // Mocking repository calls
         when(cartItemRepository.findByUserId(userId)).thenReturn(Flux.just(cartItem1, cartItem2));
@@ -204,6 +222,19 @@ class OrderServiceTest {
         when(orderItemRepository.save(any(OrderItem.class))).thenReturn(Mono.just(orderItem1),Mono.just(orderItem2));
         when(productRepository.save(any(Product.class))).thenReturn(Mono.just(product1),Mono.just(product2)); // Simulate stock update success
         when(cartItemRepository.deleteByUserId(userId)).thenReturn(Mono.empty());
+
+        //Mocking webClient
+        BigDecimal totalAmount = BigDecimal.valueOf(100.00);
+        ClientResponse clientResponse = mock(ClientResponse.class);
+        when(webClient.post()).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri(any(String.class))).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.bodyValue(any())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.exchangeToMono(any(Function.class))).thenAnswer(invocation -> {
+            Function<ClientResponse, Mono<Void>> exchangeToMono = invocation.getArgument(0);
+            when(clientResponse.statusCode()).thenReturn(HttpStatus.OK);
+            return exchangeToMono.apply(clientResponse);
+        });
 
         // Execute the createOrder method
         Mono<UUID> result = orderService.createOrder(userId);
@@ -223,5 +254,182 @@ class OrderServiceTest {
         verify(productRepository, times(2)).save(any(Product.class));
         verify(cartItemRepository).deleteByUserId(userId);
     }
-*/
+
+    @Test
+    void createOrder_paymentRequired_throwsPaymentException() {
+        // Mocking repository calls
+        when(cartItemRepository.findByUserId(userId)).thenReturn(Flux.just(cartItem1, cartItem2));
+        when(productRepository.findById(productId1)).thenReturn(Mono.just(product1));
+        when(productRepository.findById(productId2)).thenReturn(Mono.just(product2));
+        when(orderRepository.save(any(Order.class))).thenReturn(Mono.just(order));
+        when(orderItemRepository.save(any(OrderItem.class))).thenReturn(Mono.just(orderItem1),Mono.just(orderItem2));
+        when(productRepository.save(any(Product.class))).thenReturn(Mono.just(product1),Mono.just(product2)); // Simulate stock update success
+        when(cartItemRepository.deleteByUserId(userId)).thenReturn(Mono.empty());
+
+        //Mocking webClient
+        BigDecimal totalAmount = BigDecimal.valueOf(100.00);
+        ClientResponse clientResponse = mock(ClientResponse.class);
+
+        when(webClient.post()).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri(any(String.class))).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.bodyValue(any())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.exchangeToMono(any(Function.class))).thenAnswer(invocation -> {
+            Function<ClientResponse, Mono<Void>> exchangeToMono = invocation.getArgument(0);
+            when(clientResponse.statusCode()).thenReturn(HttpStatus.PAYMENT_REQUIRED);
+            return exchangeToMono.apply(clientResponse);
+        });
+
+        // Execute the createOrder method
+        Mono<UUID> result = orderService.createOrder(userId);
+
+        // Verify the result using StepVerifier
+        StepVerifier.create(result)
+                .expectError(PaymentException.class)
+                .verify();
+
+        // Verify that the repository methods were called as expected
+        verify(cartItemRepository).findByUserId(userId);
+        verify(productRepository, times(2)).findById(productId1);
+        verify(productRepository, times(2)).findById(productId2);
+
+        verify(orderRepository, times(2)).save(any(Order.class));
+        verify(orderItemRepository, times(2)).save(any(OrderItem.class));
+        verify(productRepository, times(2)).save(any(Product.class));
+        verify(cartItemRepository).deleteByUserId(userId);
+    }
+
+    @Test
+    void createOrder_notFound_throwsNoSuchElementException() {
+        // Mocking repository calls
+        when(cartItemRepository.findByUserId(userId)).thenReturn(Flux.just(cartItem1, cartItem2));
+        when(productRepository.findById(productId1)).thenReturn(Mono.just(product1));
+        when(productRepository.findById(productId2)).thenReturn(Mono.just(product2));
+        when(orderRepository.save(any(Order.class))).thenReturn(Mono.just(order));
+        when(orderItemRepository.save(any(OrderItem.class))).thenReturn(Mono.just(orderItem1),Mono.just(orderItem2));
+        when(productRepository.save(any(Product.class))).thenReturn(Mono.just(product1),Mono.just(product2)); // Simulate stock update success
+        when(cartItemRepository.deleteByUserId(userId)).thenReturn(Mono.empty());
+
+        //Mocking webClient
+        BigDecimal totalAmount = BigDecimal.valueOf(100.00);
+        ClientResponse clientResponse = mock(ClientResponse.class);
+
+        when(webClient.post()).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri(any(String.class))).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.bodyValue(any())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.exchangeToMono(any(Function.class))).thenAnswer(invocation -> {
+            Function<ClientResponse, Mono<Void>> exchangeToMono = invocation.getArgument(0);
+            when(clientResponse.statusCode()).thenReturn(HttpStatus.NOT_FOUND);
+            return exchangeToMono.apply(clientResponse);
+        });
+
+        // Execute the createOrder method
+        Mono<UUID> result = orderService.createOrder(userId);
+
+        // Verify the result using StepVerifier
+        StepVerifier.create(result)
+                .expectError(NoSuchElementException.class)
+                .verify();
+
+        // Verify that the repository methods were called as expected
+        verify(cartItemRepository).findByUserId(userId);
+        verify(productRepository, times(2)).findById(productId1);
+        verify(productRepository, times(2)).findById(productId2);
+
+        verify(orderRepository, times(2)).save(any(Order.class));
+        verify(orderItemRepository, times(2)).save(any(OrderItem.class));
+        verify(productRepository, times(2)).save(any(Product.class));
+        verify(cartItemRepository).deleteByUserId(userId);
+    }
+
+
+    @Test
+    void createOrder_badRequest_throwsRuntimeException() {
+        // Mocking repository calls
+        when(cartItemRepository.findByUserId(userId)).thenReturn(Flux.just(cartItem1, cartItem2));
+        when(productRepository.findById(productId1)).thenReturn(Mono.just(product1));
+        when(productRepository.findById(productId2)).thenReturn(Mono.just(product2));
+        when(orderRepository.save(any(Order.class))).thenReturn(Mono.just(order));
+        when(orderItemRepository.save(any(OrderItem.class))).thenReturn(Mono.just(orderItem1),Mono.just(orderItem2));
+        when(productRepository.save(any(Product.class))).thenReturn(Mono.just(product1),Mono.just(product2)); // Simulate stock update success
+        when(cartItemRepository.deleteByUserId(userId)).thenReturn(Mono.empty());
+
+        //Mocking webClient
+        BigDecimal totalAmount = BigDecimal.valueOf(100.00);
+        ClientResponse clientResponse = mock(ClientResponse.class);
+
+        when(webClient.post()).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri(any(String.class))).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.bodyValue(any())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.exchangeToMono(any(Function.class))).thenAnswer(invocation -> {
+            Function<ClientResponse, Mono<Void>> exchangeToMono = invocation.getArgument(0);
+            when(clientResponse.statusCode()).thenReturn(HttpStatus.BAD_REQUEST);
+            return exchangeToMono.apply(clientResponse);
+        });
+
+        // Execute the createOrder method
+        Mono<UUID> result = orderService.createOrder(userId);
+
+        // Verify the result using StepVerifier
+        StepVerifier.create(result)
+                .expectErrorMatches(throwable -> throwable instanceof RuntimeException && throwable.getMessage().contains("неверный запрос"))
+                .verify();
+
+        // Verify that the repository methods were called as expected
+        verify(cartItemRepository).findByUserId(userId);
+        verify(productRepository, times(2)).findById(productId1);
+        verify(productRepository, times(2)).findById(productId2);
+
+        verify(orderRepository, times(2)).save(any(Order.class));
+        verify(orderItemRepository, times(2)).save(any(OrderItem.class));
+        verify(productRepository, times(2)).save(any(Product.class));
+        verify(cartItemRepository).deleteByUserId(userId);
+    }
+
+    @Test
+    void createOrder_internalServerError_throwsRuntimeException() {
+        // Mocking repository calls
+        when(cartItemRepository.findByUserId(userId)).thenReturn(Flux.just(cartItem1, cartItem2));
+        when(productRepository.findById(productId1)).thenReturn(Mono.just(product1));
+        when(productRepository.findById(productId2)).thenReturn(Mono.just(product2));
+        when(orderRepository.save(any(Order.class))).thenReturn(Mono.just(order));
+        when(orderItemRepository.save(any(OrderItem.class))).thenReturn(Mono.just(orderItem1),Mono.just(orderItem2));
+        when(productRepository.save(any(Product.class))).thenReturn(Mono.just(product1),Mono.just(product2)); // Simulate stock update success
+        when(cartItemRepository.deleteByUserId(userId)).thenReturn(Mono.empty());
+
+        //Mocking webClient
+        BigDecimal totalAmount = BigDecimal.valueOf(100.00);
+        ClientResponse clientResponse = mock(ClientResponse.class);
+
+        when(webClient.post()).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri(any(String.class))).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.bodyValue(any())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.exchangeToMono(any(Function.class))).thenAnswer(invocation -> {
+            Function<ClientResponse, Mono<Void>> exchangeToMono = invocation.getArgument(0);
+            when(clientResponse.statusCode()).thenReturn(HttpStatus.INTERNAL_SERVER_ERROR);
+            return exchangeToMono.apply(clientResponse);
+        });
+
+        // Execute the createOrder method
+        Mono<UUID> result = orderService.createOrder(userId);
+
+        // Verify the result using StepVerifier
+        StepVerifier.create(result)
+                .expectErrorMatches(throwable -> throwable instanceof RuntimeException && throwable.getMessage().contains("внутрення ошибка сервера платежей"))
+                .verify();
+
+        // Verify that the repository methods were called as expected
+        verify(cartItemRepository).findByUserId(userId);
+        verify(productRepository, times(2)).findById(productId1);
+        verify(productRepository, times(2)).findById(productId2);
+
+        verify(orderRepository, times(2)).save(any(Order.class));
+        verify(orderItemRepository, times(2)).save(any(OrderItem.class));
+        verify(productRepository, times(2)).save(any(Product.class));
+        verify(cartItemRepository).deleteByUserId(userId);
+    }
+
 }
