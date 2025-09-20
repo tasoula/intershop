@@ -11,8 +11,5 @@ import java.util.UUID;
 
 @Repository
 public interface BalanceRepository extends ReactiveCrudRepository<UserBalance, UUID> {
-    @Query("SELECT balance FROM t_balance WHERE user_id = :userId")
-    Mono<BigDecimal> findBalanceByUserId(UUID userId);
-
     Mono<UserBalance> findByUserId(UUID userId);
 }
