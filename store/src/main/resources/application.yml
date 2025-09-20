@@ -27,3 +27,7 @@ logging:
         org.springframework.r2dbc.core.DefaultDatabaseClient: DEBUG # заодно включим логирование SQL-запросов
     #    io.r2dbc: DEBUG # и добавим больше деталей (не включать в настоящем приложении)
 
+balance:
+    service:
+        url: http://localhost:8081
+

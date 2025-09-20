@@ -34,12 +34,16 @@ public class OrderService {
     private final CartItemRepository cartItemRepository;
     private final ProductRepository productRepository;
     private final WebClient webClient;
-    public OrderService(OrderRepository orderRepository, OrderItemRepository orderItemRepository, CartItemRepository cartItemRepository, ProductRepository productRepository) {
+    public OrderService(OrderRepository orderRepository,
+                        OrderItemRepository orderItemRepository,
+                        CartItemRepository cartItemRepository,
+                        ProductRepository productRepository,
+                        WebClient.Builder webClientBuilder) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.cartItemRepository = cartItemRepository;
         this.productRepository = productRepository;
-        this.webClient = WebClient.create("http://localhost:8081");
+        this.webClient = webClientBuilder.build();
     }
 
     public Mono<OrderDto> getById(UUID id) {

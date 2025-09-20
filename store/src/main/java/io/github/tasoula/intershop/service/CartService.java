@@ -23,10 +23,12 @@ public class CartService {
 
     private final WebClient webClient;
 
-    public CartService(CartItemRepository cartItemRepository, ProductRepository productRepository) {
+    public CartService(CartItemRepository cartItemRepository,
+                       ProductRepository productRepository,
+                       WebClient.Builder webClientBuilder) {
         this.cartItemRepository = cartItemRepository;
         this.productRepository = productRepository;
-        this.webClient = WebClient.create("http://localhost:8081");
+        this.webClient = webClientBuilder.build();
     }
 
     public Flux<ProductDto> findByUserId(UUID userId) {
@@ -77,10 +79,6 @@ public class CartService {
 
     public Mono<Boolean> isEmpty(UUID userId) {
         return cartItemRepository.existsByUserId(userId).map(exists -> !exists);
-    }
-
-    public  Mono<Boolean> enoughMoney(UUID userId) {
-        return Mono.just(false);
     }
 
     public Mono<Boolean> isAvailable(UUID userId) {
