@@ -1,6 +1,7 @@
 package io.github.tasoula.intershop.service;
 
 
+import io.github.tasoula.client.domain.Amount;
 import io.github.tasoula.intershop.dao.CartItemRepository;
 import io.github.tasoula.intershop.dao.ProductRepository;
 import io.github.tasoula.intershop.dto.ProductDto;
@@ -14,6 +15,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.web.servlet.htmlunit.MockMvcWebClientBuilder;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -39,8 +42,21 @@ class CartServiceTest  {
     @Mock
     private ProductRepository productRepository;
 
+    @Mock
+    private WebClient webClient;
+
+    @Mock
+    private WebClient.RequestHeadersUriSpec requestHeadersUriSpec;
+
+    @Mock
+    private WebClient.RequestHeadersSpec requestHeadersSpec;
+
+    @Mock
+    private WebClient.ResponseSpec responseSpec;
+
    @InjectMocks
     private CartService cartService;
+
 
     private UUID userId;
     private UUID productId;
@@ -325,5 +341,72 @@ class CartServiceTest  {
         StepVerifier.create(result)
                 .verifyComplete();
         verify(cartItemRepository, times(1)).deleteByUserIdAndProductId(userId, productId);
+    }
+
+    @Test
+    void isAvailable_returnsTrueWhenBalanceIsSufficient() {
+        UUID userId = UUID.randomUUID();
+        BigDecimal cartTotal = new BigDecimal("50.00");
+        BigDecimal balanceAmount = new BigDecimal("100.00");
+        Amount amount = new Amount();
+        amount.setAmount(balanceAmount);
+
+        // Mock CartItemRepository
+        when(cartItemRepository.calculateTotalPriceByUserId(userId)).thenReturn(Mono.just(cartTotal));
+
+        // Mock WebClient interactions
+        when(webClient.get()).thenReturn(requestHeadersUriSpec);
+        when(requestHeadersUriSpec.uri("/balance/" + userId.toString())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.bodyToMono(Amount.class)).thenReturn(Mono.just(amount));
+
+        Mono<Boolean> isAvailableMono = cartService.isAvailable(userId);
+        boolean isAvailable = isAvailableMono.block();
+
+        assertEquals(true, isAvailable);
+    }
+
+    @Test
+    void isAvailable_returnsFalseWhenBalanceIsInsufficient() {
+        UUID userId = UUID.randomUUID();
+        BigDecimal cartTotal = new BigDecimal("100.00");
+        BigDecimal balanceAmount = new BigDecimal("50.00");
+        Amount amount = new Amount();
+        amount.setAmount(balanceAmount);
+
+        // Mock CartItemRepository
+        when(cartItemRepository.calculateTotalPriceByUserId(userId)).thenReturn(Mono.just(cartTotal));
+
+        // Mock WebClient interactions
+        when(webClient.get()).thenReturn(requestHeadersUriSpec);
+        when(requestHeadersUriSpec.uri("/balance/" + userId.toString())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.bodyToMono(Amount.class)).thenReturn(Mono.just(amount));
+
+
+        Mono<Boolean> isAvailableMono = cartService.isAvailable(userId);
+        boolean isAvailable = isAvailableMono.block();
+
+        assertEquals(false, isAvailable);
+    }
+
+    @Test
+    void isAvailable_returnsFalseWhenBalanceServiceReturnsError() {
+        UUID userId = UUID.randomUUID();
+        BigDecimal cartTotal = new BigDecimal("50.00");
+
+        // Mock CartItemRepository
+        when(cartItemRepository.calculateTotalPriceByUserId(userId)).thenReturn(Mono.just(cartTotal));
+
+        // Mock WebClient interactions to simulate an error (e.g., empty response)
+        when(webClient.get()).thenReturn(requestHeadersUriSpec);
+        when(requestHeadersUriSpec.uri("/balance/" + userId.toString())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.bodyToMono(Amount.class)).thenReturn(Mono.empty()); // Simulate error/empty response
+
+        Mono<Boolean> isAvailableMono = cartService.isAvailable(userId);
+        boolean isAvailable = isAvailableMono.block();
+
+        assertEquals(false, isAvailable);
     }
 }
