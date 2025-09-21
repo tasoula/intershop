@@ -1,0 +1,107 @@
+openapi: 3.0.0
+info:
+  title: Сервис платежей
+  version: 1.0.0
+  description: RESTful API для управления балансом пользователя и осуществления платежей.
+
+servers:
+  - url: http://localhost:8081  # Замените на фактический URL вашего сервиса
+
+paths:
+  /balance/{userId}:
+    get:
+      summary: Получить баланс пользователя
+      description: Возвращает текущий баланс пользователя.  Начальный баланс фиксированный.
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID пользователя
+      responses:
+        '200':
+          description: Успешный запрос. Возвращает баланс пользователя.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Amount'
+        '400':
+          description: Некорректный запрос (например, неверный формат UUID).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Внутренняя ошибка сервера.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /payment/{userId}:
+    post:
+      summary: Осуществить платеж
+      description: Вычитает указанную сумму из баланса пользователя.
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: UUID пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Amount'
+      responses:
+        '200':
+          description: Платеж успешно выполнен.
+        '400':
+          description: Некорректный запрос (например, неверный формат UUID или отрицательная сумма).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '402':
+          description: Недостаточно средств для осуществления платежа.  Код ошибки `402 Payment Required`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Пользователь с таким UUID не найден.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Внутренняя ошибка сервера.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Описание ошибки.
+      required:
+        - error
+    Amount:
+      type: object
+      properties:
+        amount:
+          type: string
+          format: decimal
+          description: Сумма денег (число с фиксированной точкой, 2 знака после запятой)
+          pattern: "^-?\\d+(\\.\\d{1,2})?$"
+      required:
+        - amount
