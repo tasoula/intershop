@@ -55,13 +55,27 @@ $(document).ready(function() {
                      $('#total-price').text('Итого: ' + total + ' руб.');
                 });
 
+
+
                 // Проверяем, пуста ли корзина и скрываем/показываем кнопку "Купить"
                 $.get('/cart/is_empty', function(isEmpty) {
-                     if (isEmpty) {
-                           $('#new-order-form').hide();
-                     } else {
-                           $('#new-order-form').show();
-                     }
+                    $.get('/cart/is_available', function(isAvailable) {
+                        if(isEmpty){
+                            $('#button-new-order').hide();
+                            $('#payment-unavailable').hide();
+                        }
+                        else{
+                            if(isAvailable){
+                                 $('#button-new-order').show();
+                                 $('#payment-unavailable').hide();
+                            }
+                            else{
+                                $('#button-new-order').hide();
+                                $('#payment-unavailable').show();
+                            }
+                        }
+
+                    });
                 });
             },
             error: function(xhr, status, error) {
@@ -70,17 +84,4 @@ $(document).ready(function() {
             }
         });
     });
-
-    // Инициализация видимости кнопки "В корзину" при загрузке страницы
- /*   $('.item-card').each(function() {
-        var $quantitySpan = $(this).find('span'); // span с количеством
-        var $addToCartButton = $(this).find('.add-to-cart'); // Кнопка "В корзину"
-        var quantity = parseInt($quantitySpan.text()); // Текущее количество
-
-        if (quantity > 0) {
-            $addToCartButton.hide(); // Скрываем кнопку, если количество > 0
-        } else {
-            $addToCartButton.show(); // Показываем, если количество == 0
-        }
-    });*/
 });
