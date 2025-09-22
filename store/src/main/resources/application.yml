@@ -16,6 +16,13 @@ spring:
             initial-size: 10
             validation-query: SELECT 1 # Проверка доступности соединения
 
+    redis:
+        host: localhost
+        port: 6379
+        cache:
+            redis:
+                time-to-live: PT5S    # TTL по умолчанию для кешей
+
 upload.images.dir: ${UPLOAD_IMAGES_DIR:/app/images}
 
 cookie:
