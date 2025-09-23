@@ -151,7 +151,7 @@ public class OrderService {
                             product.setStockQuantity(product.getStockQuantity() - cartItem.getQuantity());
 
                             // Сохраняем обновленный продукт и элемент заказа
-                            return productDataService.save(product)
+                            return productDataService.update(product)
                                     .then(orderItemRepository.save(orderItem))
                                     .thenReturn(orderItem);
                         })

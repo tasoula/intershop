@@ -2,16 +2,16 @@ package io.github.tasoula.intershop.service;
 
 import io.github.tasoula.intershop.dto.ProductDto;
 import io.github.tasoula.intershop.exceptions.ResourceNotFoundException;
-import io.github.tasoula.intershop.model.*;
-import org.springframework.cache.annotation.Cacheable;
+import io.github.tasoula.intershop.model.Product;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.*;
+import java.util.UUID;
 
 @Service
 public class ProductService {
@@ -23,6 +23,20 @@ public class ProductService {
         this.productDataService = productDataService;
         this.cartService = cartService;
     }
+
+ /*   public Mono<Page<ProductDto>> findAll(UUID userId, String search, Pageable pageable) {
+        return productDataService.findAll(search, pageable) // Теперь возвращает Mono<List<Product>>
+                .flatMap(products -> {
+                    return Mono.just(products) // Оборачиваем List<Product> в Mono
+                            .flatMapMany(Flux::fromIterable) // Преобразуем List<Product> в Flux<Product> для обработки каждого элемента
+                            .flatMap(product -> mapToDto(userId, product)) // Применяем mapToDto к каждому продукту
+                            .collectList(); // Собираем результаты обработки в List<ProductDto>
+                })
+                .zipWith(productDataService.count()) // Получаем общее количество элементов
+                .map(tuple -> new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()));
+    }
+
+  */
 
     public Mono<Page<ProductDto>> findAll(UUID userId, String search, Pageable pageable) {
         return productDataService.findAll(search, pageable)
@@ -37,7 +51,6 @@ public class ProductService {
                 .map(cartQuantity -> new ProductDto(product, cartQuantity));
     }
 
-    @Cacheable(value = "products", key = "#userId + '-' + #productId")
     public Mono<ProductDto> findById(UUID userId, UUID productId) {
         return productDataService.findById(productId)
                 .switchIfEmpty(Mono.error(new ResourceNotFoundException("Product not found with id: " + productId)))
