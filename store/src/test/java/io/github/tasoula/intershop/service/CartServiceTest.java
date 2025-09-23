@@ -40,7 +40,7 @@ class CartServiceTest  {
     private CartItemRepository cartItemRepository;
 
     @Mock
-    private ProductRepository productRepository;
+    private ProductDataService productRepository;
 
     @Mock
     private WebClient webClient;
