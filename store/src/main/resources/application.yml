@@ -16,12 +16,13 @@ spring:
             initial-size: 10
             validation-query: SELECT 1 # Проверка доступности соединения
 
-    redis:
-        host: localhost
-        port: 6379
-        cache:
-            redis:
-                time-to-live: PT5S    # TTL по умолчанию для кешей
+    data:
+        redis:
+            host: ${REDIS_HOST}
+            port: 6379
+            cache:
+                redis:
+                    time-to-live: PT5S    # TTL по умолчанию для кешей
 
 upload.images.dir: ${UPLOAD_IMAGES_DIR:/app/images}
 
@@ -29,12 +30,13 @@ cookie:
     max:
         age:
             seconds: 86400
-#logging:
-#    level:
-#        org.springframework.r2dbc.core.DefaultDatabaseClient: DEBUG # заодно включим логирование SQL-запросов
+    logging:
+        level:
+    #        org.springframework.r2dbc.core.DefaultDatabaseClient: DEBUG # заодно включим логирование SQL-запросов
     #    io.r2dbc: DEBUG # и добавим больше деталей (не включать в настоящем приложении)
+            org.springframework.data.redis: DEBUG
 
 balance:
     service:
-        url: http://localhost:8081
+        url:  http://${PAYMENT_SERVICE_HOST}:8081
 

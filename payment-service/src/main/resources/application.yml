@@ -10,9 +10,9 @@ spring:
       mode: always
 
   r2dbc:
-    url: r2dbc:postgresql://localhost:5432/payment-service-db
-    username: ${INTERSHOP_DB_USERNAME}
-    password: ${INTERSHOP_DB_PASSWORD}
+    url: ${PAYMENT_SERVICE_DB_URL}
+    username: ${PAYMENT_SERVICE_DB_USERNAME}
+    password: ${PAYMENT_SERVICE_DB_PASSWORD}
 
     pool:
       max-size: 20
