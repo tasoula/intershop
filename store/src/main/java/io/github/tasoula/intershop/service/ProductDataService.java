@@ -44,7 +44,6 @@ public class ProductDataService {
                         return getFromRepository(search, pageable)
                                 .collectList()
                                 .flatMapMany(products -> {
-                                    System.out.println("----------------Chaching data " + cacheKey);
                                     reactiveRedisTemplate.opsForList().rightPushAll(cacheKey, products).subscribe();
                                     reactiveRedisTemplate.expire(cacheKey, Duration.ofMinutes(3)).subscribe();
                                     return Flux.fromIterable(products);
@@ -55,7 +54,6 @@ public class ProductDataService {
 
     @Cacheable(value = PRODUCTS_CACHE_KEY_PREFIX, key = "#productId")
     public Mono<Product> findById(UUID productId) {
-        System.out.println("-------Getting product " + productId + " from db");
         return productRepository.findById(productId)
                 .switchIfEmpty(Mono.error(new ResourceNotFoundException("Product not found with id: " + productId)));
     }
