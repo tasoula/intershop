@@ -41,7 +41,7 @@ class OrderServiceTest {
     @Mock
     private CartItemRepository cartItemRepository;
     @Mock
-    private ProductRepository productRepository;
+    private ProductDataService productRepository;
 
     @Mock
     private WebClient webClient;
@@ -220,7 +220,7 @@ class OrderServiceTest {
         when(productRepository.findById(productId2)).thenReturn(Mono.just(product2));
         when(orderRepository.save(any(Order.class))).thenReturn(Mono.just(order));
         when(orderItemRepository.save(any(OrderItem.class))).thenReturn(Mono.just(orderItem1),Mono.just(orderItem2));
-        when(productRepository.save(any(Product.class))).thenReturn(Mono.just(product1),Mono.just(product2)); // Simulate stock update success
+        when(productRepository.update(any(Product.class))).thenReturn(Mono.just(product1),Mono.just(product2)); // Simulate stock update success
         when(cartItemRepository.deleteByUserId(userId)).thenReturn(Mono.empty());
 
         //Mocking webClient
@@ -251,7 +251,7 @@ class OrderServiceTest {
 
         verify(orderRepository, times(2)).save(any(Order.class));
         verify(orderItemRepository, times(2)).save(any(OrderItem.class));
-        verify(productRepository, times(2)).save(any(Product.class));
+        verify(productRepository, times(2)).update(any(Product.class));
         verify(cartItemRepository).deleteByUserId(userId);
     }
 
@@ -263,7 +263,7 @@ class OrderServiceTest {
         when(productRepository.findById(productId2)).thenReturn(Mono.just(product2));
         when(orderRepository.save(any(Order.class))).thenReturn(Mono.just(order));
         when(orderItemRepository.save(any(OrderItem.class))).thenReturn(Mono.just(orderItem1),Mono.just(orderItem2));
-        when(productRepository.save(any(Product.class))).thenReturn(Mono.just(product1),Mono.just(product2)); // Simulate stock update success
+        when(productRepository.update(any(Product.class))).thenReturn(Mono.just(product1),Mono.just(product2)); // Simulate stock update success
         when(cartItemRepository.deleteByUserId(userId)).thenReturn(Mono.empty());
 
         //Mocking webClient
@@ -295,7 +295,7 @@ class OrderServiceTest {
 
         verify(orderRepository, times(2)).save(any(Order.class));
         verify(orderItemRepository, times(2)).save(any(OrderItem.class));
-        verify(productRepository, times(2)).save(any(Product.class));
+        verify(productRepository, times(2)).update(any(Product.class));
         verify(cartItemRepository).deleteByUserId(userId);
     }
 
@@ -307,7 +307,7 @@ class OrderServiceTest {
         when(productRepository.findById(productId2)).thenReturn(Mono.just(product2));
         when(orderRepository.save(any(Order.class))).thenReturn(Mono.just(order));
         when(orderItemRepository.save(any(OrderItem.class))).thenReturn(Mono.just(orderItem1),Mono.just(orderItem2));
-        when(productRepository.save(any(Product.class))).thenReturn(Mono.just(product1),Mono.just(product2)); // Simulate stock update success
+        when(productRepository.update(any(Product.class))).thenReturn(Mono.just(product1),Mono.just(product2)); // Simulate stock update success
         when(cartItemRepository.deleteByUserId(userId)).thenReturn(Mono.empty());
 
         //Mocking webClient
@@ -339,7 +339,7 @@ class OrderServiceTest {
 
         verify(orderRepository, times(2)).save(any(Order.class));
         verify(orderItemRepository, times(2)).save(any(OrderItem.class));
-        verify(productRepository, times(2)).save(any(Product.class));
+        verify(productRepository, times(2)).update(any(Product.class));
         verify(cartItemRepository).deleteByUserId(userId);
     }
 
@@ -352,7 +352,7 @@ class OrderServiceTest {
         when(productRepository.findById(productId2)).thenReturn(Mono.just(product2));
         when(orderRepository.save(any(Order.class))).thenReturn(Mono.just(order));
         when(orderItemRepository.save(any(OrderItem.class))).thenReturn(Mono.just(orderItem1),Mono.just(orderItem2));
-        when(productRepository.save(any(Product.class))).thenReturn(Mono.just(product1),Mono.just(product2)); // Simulate stock update success
+        when(productRepository.update(any(Product.class))).thenReturn(Mono.just(product1),Mono.just(product2)); // Simulate stock update success
         when(cartItemRepository.deleteByUserId(userId)).thenReturn(Mono.empty());
 
         //Mocking webClient
@@ -384,7 +384,7 @@ class OrderServiceTest {
 
         verify(orderRepository, times(2)).save(any(Order.class));
         verify(orderItemRepository, times(2)).save(any(OrderItem.class));
-        verify(productRepository, times(2)).save(any(Product.class));
+        verify(productRepository, times(2)).update(any(Product.class));
         verify(cartItemRepository).deleteByUserId(userId);
     }
 
@@ -396,7 +396,7 @@ class OrderServiceTest {
         when(productRepository.findById(productId2)).thenReturn(Mono.just(product2));
         when(orderRepository.save(any(Order.class))).thenReturn(Mono.just(order));
         when(orderItemRepository.save(any(OrderItem.class))).thenReturn(Mono.just(orderItem1),Mono.just(orderItem2));
-        when(productRepository.save(any(Product.class))).thenReturn(Mono.just(product1),Mono.just(product2)); // Simulate stock update success
+        when(productRepository.update(any(Product.class))).thenReturn(Mono.just(product1),Mono.just(product2)); // Simulate stock update success
         when(cartItemRepository.deleteByUserId(userId)).thenReturn(Mono.empty());
 
         //Mocking webClient
@@ -428,7 +428,7 @@ class OrderServiceTest {
 
         verify(orderRepository, times(2)).save(any(Order.class));
         verify(orderItemRepository, times(2)).save(any(OrderItem.class));
-        verify(productRepository, times(2)).save(any(Product.class));
+        verify(productRepository, times(2)).update(any(Product.class));
         verify(cartItemRepository).deleteByUserId(userId);
     }
 

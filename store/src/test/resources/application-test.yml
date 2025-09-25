@@ -3,8 +3,4 @@ spring:
     activate:
       on-profile: test
 
-  r2dbc:
-    name: r2dbc:postgresql://${INTERSHOP_TEST_DB_NAME}
-    username: ${INTERSHOP_DB_USERNAME}
-    password: ${INTERSHOP_DB_PASSWORD}
 

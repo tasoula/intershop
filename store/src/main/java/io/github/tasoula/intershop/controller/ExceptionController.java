@@ -51,8 +51,7 @@ public class ExceptionController {
 
     @ExceptionHandler({Exception.class})
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public Mono<String> handleException() {
+    public Mono<String> handleException(Exception e) {
         return Mono.just("exceptions/oops.html"); // что-то пошло не так
     }
-
 }
