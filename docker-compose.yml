@@ -1,4 +1,4 @@
-version: "3.8"
+
 services:
   db:
     image: postgres:16-alpine
@@ -10,31 +10,72 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - db_data:/var/lib/postgresql/data  # Сохраняем данные между перезапусками
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - mynetwork
+
+  payment-db:
+    image: postgres:16-alpine
+    container_name: payment-postgres
+    environment:
+      POSTGRES_USER: ${PAYMENT_SERVICE_DB_USERNAME}
+      POSTGRES_PASSWORD: ${PAYMENT_SERVICE_DB_PASSWORD}
+      POSTGRES_DB: ${PAYMENT_SERVICE_DB_NAME}
+    ports:
+      - "5433:5432"
+    volumes:
+      - payment_db_data:/var/lib/postgresql/data
+    networks:
+      - mynetwork
+
+  redis-server:
+    image: redis:7.4.2-bookworm
+    container_name: redis-server
+    ports:
+      - "6379:6379"
+    networks:
+      - mynetwork
+
+  payment-service:
+    build: ./payment-service
+    container_name: payment-service
+    ports:
+      - "8081:8081"
+    depends_on:
+      - payment-db
+    environment:
+      PAYMENT_SERVICE_DB_USERNAME: ${PAYMENT_SERVICE_DB_USERNAME}
+      PAYMENT_SERVICE_DB_PASSWORD: ${PAYMENT_SERVICE_DB_PASSWORD}
+      PAYMENT_SERVICE_DB_URL: r2dbc:postgresql://payment-postgres:5432/${PAYMENT_SERVICE_DB_NAME}
     networks:
       - mynetwork
 
   app:
-    build: .  # Указывает Docker Compose использовать Dockerfile в текущей директории
+    build: ./store
     container_name: intershop-app
     ports:
       - "8080:8080"
     depends_on:
       - db
+      - redis-server
+      - payment-service
     environment:
       INTERSHOP_DB_URL: r2dbc:postgresql://db:5432/${INTERSHOP_DB_NAME}
       INTERSHOP_DB_USERNAME: ${INTERSHOP_DB_USERNAME}
       INTERSHOP_DB_PASSWORD: ${INTERSHOP_DB_PASSWORD}
+      REDIS_HOST: redis-server
+      PAYMENT_SERVICE_HOST: payment-service
       COOKIE_MAX_AGE_SECONDS: 86400
-      UPLOAD_IMAGES_DIR: /app/images # путь в контейнере
-
+      UPLOAD_IMAGES_DIR: /app/images
     networks:
       - mynetwork
     volumes:
-      - ./${UPLOAD_IMAGES_DIR}:/app/images # путь монтирования тома должен соответствовать UPLOAD_IMAGES_DIR в контейнере
+      - ./${UPLOAD_IMAGES_DIR}:/app/images
+
 volumes:
   db_data:
   upload_data:
+  payment_db_data:
 
 networks:
   mynetwork:

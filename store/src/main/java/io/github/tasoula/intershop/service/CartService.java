@@ -2,7 +2,6 @@ package io.github.tasoula.intershop.service;
 
 import io.github.tasoula.client.domain.Amount;
 import io.github.tasoula.intershop.dao.CartItemRepository;
-import io.github.tasoula.intershop.dao.ProductRepository;
 import io.github.tasoula.intershop.dto.ProductDto;
 import io.github.tasoula.intershop.exceptions.ResourceNotFoundException;
 import io.github.tasoula.intershop.model.CartItem;
@@ -19,21 +18,21 @@ import java.util.UUID;
 public class CartService {
 
     private final CartItemRepository cartItemRepository;
-    private final ProductRepository productRepository;
+    private final ProductDataService productDataService;
 
     private final WebClient webClient;
 
     public CartService(CartItemRepository cartItemRepository,
-                       ProductRepository productRepository,
+                       ProductDataService productDataService,
                        WebClient balanceWebClient) {
         this.cartItemRepository = cartItemRepository;
-        this.productRepository = productRepository;
+        this.productDataService = productDataService;
         this.webClient = balanceWebClient;
     }
 
     public Flux<ProductDto> findByUserId(UUID userId) {
         return cartItemRepository.findByUserIdOrderByCreatedAtDesc(userId)
-                .flatMap(cartItem -> productRepository.findById(cartItem.getProductId())
+                .flatMap(cartItem -> productDataService.findById(cartItem.getProductId())
                         .map(product -> new ProductDto(product, cartItem.getQuantity())));
     }
 
@@ -48,7 +47,7 @@ public class CartService {
 
     @Transactional
     public Mono<Integer> changeProductQuantityInCart(UUID userId, UUID productId, int changeQuantity) {
-        return  productRepository.findById(productId)
+        return  productDataService.findById(productId)
                 .switchIfEmpty(Mono.error(() -> new ResourceNotFoundException("Product with id " + productId + " not found.")))
                 .flatMap(product -> cartItemRepository.findByUserIdAndProductId(userId, productId)
                         .switchIfEmpty(Mono.just(new CartItem(userId, productId))) // Создаем новый CartItem с quantity = 0

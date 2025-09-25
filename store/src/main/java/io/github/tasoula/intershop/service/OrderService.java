@@ -4,7 +4,6 @@ import io.github.tasoula.client.domain.Amount;
 import io.github.tasoula.intershop.dao.CartItemRepository;
 import io.github.tasoula.intershop.dao.OrderItemRepository;
 import io.github.tasoula.intershop.dao.OrderRepository;
-import io.github.tasoula.intershop.dao.ProductRepository;
 import io.github.tasoula.intershop.dto.OrderDto;
 import io.github.tasoula.intershop.dto.ProductDto;
 import io.github.tasoula.intershop.exceptions.PaymentException;
@@ -15,7 +14,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.ErrorResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -32,17 +30,17 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final CartItemRepository cartItemRepository;
-    private final ProductRepository productRepository;
+    private final ProductDataService productDataService;
     private final WebClient webClient;
     public OrderService(OrderRepository orderRepository,
                         OrderItemRepository orderItemRepository,
                         CartItemRepository cartItemRepository,
-                        ProductRepository productRepository,
+                        ProductDataService productDataService,
                         WebClient balanceWebClient) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.cartItemRepository = cartItemRepository;
-        this.productRepository = productRepository;
+        this.productDataService = productDataService;
         this.webClient = balanceWebClient;
     }
 
@@ -74,7 +72,7 @@ public class OrderService {
 
     private Mono<Boolean> checkStockAvailability(List<CartItem> cartItems) {
         return Flux.fromIterable(cartItems)
-                .flatMap(cartItem -> productRepository.findById(cartItem.getProductId())
+                .flatMap(cartItem -> productDataService.findById(cartItem.getProductId())
                         .map(product -> product.getStockQuantity() >= cartItem.getQuantity())
                 )
                 .all(Boolean::booleanValue); // Проверяем, что все продукты есть в нужном количестве
@@ -140,7 +138,7 @@ public class OrderService {
 
     private Mono<List<OrderItem>> saveOrderItemsAndUpdateStock(List<CartItem> cartItems, UUID orderId) {
         return Flux.fromIterable(cartItems)
-                .flatMap(cartItem -> productRepository.findById(cartItem.getProductId())
+                .flatMap(cartItem -> productDataService.findById(cartItem.getProductId())
                         .flatMap(product -> {
                             // Создаем элемент заказа
                             OrderItem orderItem = new OrderItem();
@@ -153,7 +151,7 @@ public class OrderService {
                             product.setStockQuantity(product.getStockQuantity() - cartItem.getQuantity());
 
                             // Сохраняем обновленный продукт и элемент заказа
-                            return productRepository.save(product)
+                            return productDataService.update(product)
                                     .then(orderItemRepository.save(orderItem))
                                     .thenReturn(orderItem);
                         })
@@ -178,7 +176,7 @@ public class OrderService {
     }
 
     private Mono<ProductDto> convertToProductDto(OrderItem orderItem) {
-        return productRepository.findById(orderItem.getProductId())
+        return productDataService.findById(orderItem.getProductId())
                 .map(product -> {
                     ProductDto dto = new ProductDto();
                     dto.setId(product.getId());
