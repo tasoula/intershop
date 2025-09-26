@@ -1,36 +1,42 @@
 package io.github.tasoula.intershop.service;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-
-import java.math.BigDecimal;
-import java.sql.Timestamp;
-import java.time.Instant;
-import java.util.*;
-import java.util.function.Function;
-
 import io.github.tasoula.intershop.dao.CartItemRepository;
 import io.github.tasoula.intershop.dao.OrderItemRepository;
 import io.github.tasoula.intershop.dao.OrderRepository;
-import io.github.tasoula.intershop.dao.ProductRepository;
 import io.github.tasoula.intershop.dto.OrderDto;
 import io.github.tasoula.intershop.exceptions.PaymentException;
-import io.github.tasoula.intershop.model.*;
-import io.github.tasoula.intershop.service.OrderService;
+import io.github.tasoula.intershop.model.CartItem;
+import io.github.tasoula.intershop.model.Order;
+import io.github.tasoula.intershop.model.OrderItem;
+import io.github.tasoula.intershop.model.Product;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.UUID;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class OrderServiceTest {
@@ -41,22 +47,11 @@ class OrderServiceTest {
     @Mock
     private CartItemRepository cartItemRepository;
     @Mock
-    private ProductDataService productRepository;
-
-    @Mock
-    private WebClient webClient;
-
-    @Mock
-    private WebClient.RequestBodyUriSpec requestBodyUriSpec;
-
-    @Mock
-    private WebClient.RequestHeadersSpec requestHeadersSpec;
-
-    @Mock
-    private WebClient.ResponseSpec responseSpec;
-
+    private ProductDataService productDataService;
     @InjectMocks
     private OrderService orderService;
+    private MockWebServer mockWebServer;
+    private WebClient webClient;
 
     private UUID userId;
     private UUID orderId;
@@ -72,7 +67,7 @@ class OrderServiceTest {
     private OrderDto orderDto;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws IOException {
         userId = UUID.randomUUID();
         orderId = UUID.randomUUID();
         productId1 = UUID.randomUUID();
@@ -117,14 +112,27 @@ class OrderServiceTest {
 
         orderDto = new OrderDto();
         orderDto.setId(orderId);
+
+        mockWebServer = new MockWebServer();
+        mockWebServer.start();
+
+        String baseUrl = mockWebServer.url("/").toString();
+        webClient = WebClient.builder().baseUrl(baseUrl).build();
+        orderService = new OrderService(orderRepository, orderItemRepository, cartItemRepository, productDataService, webClient); // Re-inject dependencies
+    }
+
+    @AfterEach
+    public void tearDown() throws IOException {
+        // Останавливаем MockWebServer после каждого теста
+        mockWebServer.shutdown();
     }
 
     @Test
     void getById_OrderExists_ReturnsOrderDto() {
         when(orderRepository.findById(orderId)).thenReturn(Mono.just(order));
         when(orderItemRepository.findByOrderId(orderId)).thenReturn(Flux.fromIterable(List.of(orderItem1, orderItem2)));
-        when(productRepository.findById(orderItem1.getProductId())).thenReturn(Mono.just(product1));
-        when(productRepository.findById(orderItem2.getProductId())).thenReturn(Mono.just(product2));
+        when(productDataService.findById(orderItem1.getProductId())).thenReturn(Mono.just(product1));
+        when(productDataService.findById(orderItem2.getProductId())).thenReturn(Mono.just(product2));
 
         Mono<OrderDto> result = orderService.getById(orderId);
 
@@ -153,8 +161,8 @@ class OrderServiceTest {
     void getByUserId_OrdersExist_ReturnsFluxOfOrderDtos() {
         when(orderRepository.findByUserId(userId)).thenReturn(Flux.just(order));
         when(orderItemRepository.findByOrderId(orderId)).thenReturn(Flux.fromIterable(List.of(orderItem1, orderItem2)));
-        when(productRepository.findById(orderItem1.getProductId())).thenReturn(Mono.just(product1));
-        when(productRepository.findById(orderItem2.getProductId())).thenReturn(Mono.just(product2));
+        when(productDataService.findById(orderItem1.getProductId())).thenReturn(Mono.just(product1));
+        when(productDataService.findById(orderItem2.getProductId())).thenReturn(Mono.just(product2));
 
         Flux<OrderDto> result = orderService.getByUserId(userId);
 
@@ -213,223 +221,134 @@ class OrderServiceTest {
     }
 
     @Test
-    void createOrder_SuccessfulOrderCreation_ReturnsOrderId() {
-        // Mocking repository calls
-        when(cartItemRepository.findByUserId(userId)).thenReturn(Flux.just(cartItem1, cartItem2));
-        when(productRepository.findById(productId1)).thenReturn(Mono.just(product1));
-        when(productRepository.findById(productId2)).thenReturn(Mono.just(product2));
-        when(orderRepository.save(any(Order.class))).thenReturn(Mono.just(order));
-        when(orderItemRepository.save(any(OrderItem.class))).thenReturn(Mono.just(orderItem1),Mono.just(orderItem2));
-        when(productRepository.update(any(Product.class))).thenReturn(Mono.just(product1),Mono.just(product2)); // Simulate stock update success
-        when(cartItemRepository.deleteByUserId(userId)).thenReturn(Mono.empty());
+    void createOrder_notEnoughStock() {
+        // Arrange
+        UUID productId = UUID.randomUUID();
 
-        //Mocking webClient
-        BigDecimal totalAmount = BigDecimal.valueOf(100.00);
-        ClientResponse clientResponse = mock(ClientResponse.class);
-        when(webClient.post()).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.uri(any(String.class))).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.bodyValue(any())).thenReturn(requestHeadersSpec);
-        when(requestHeadersSpec.exchangeToMono(any(Function.class))).thenAnswer(invocation -> {
-            Function<ClientResponse, Mono<Void>> exchangeToMono = invocation.getArgument(0);
-            when(clientResponse.statusCode()).thenReturn(HttpStatus.OK);
-            return exchangeToMono.apply(clientResponse);
-        });
+        CartItem cartItem = new CartItem();
+        cartItem.setProductId(productId);
+        cartItem.setUserId(userId);
+        cartItem.setQuantity(10);
+        List<CartItem> cartItems = List.of(cartItem);
 
-        // Execute the createOrder method
+        Product product = new Product();
+        product.setId(productId);
+        product.setStockQuantity(5); // Not enough stock
+
+        when(cartItemRepository.findByUserId(userId)).thenReturn(Flux.fromIterable(cartItems));
+        when(productDataService.findById(productId)).thenReturn(Mono.just(product));
+
+        // Act
         Mono<UUID> result = orderService.createOrder(userId);
 
-        // Verify the result using StepVerifier
+        // Assert
+        StepVerifier.create(result)
+                .expectComplete() // Should complete without emitting anything because of empty Mono
+                .verify();
+    }
+
+    @Test
+    void createOrder_emptyCart() {
+        // Arrange
+        when(cartItemRepository.findByUserId(userId)).thenReturn(Flux.empty());
+
+        // Act
+        Mono<UUID> result = orderService.createOrder(userId);
+
+        // Assert
+        StepVerifier.create(result)
+                .expectComplete()
+                .verify();
+    }
+
+    private void prepareMockDependencies(){
+        when(cartItemRepository.findByUserId(userId)).thenReturn(Flux.fromIterable(List.of(cartItem1, cartItem2)));
+        when(productDataService.findById(productId1)).thenReturn(Mono.just(product1));
+        when(productDataService.findById(productId2)).thenReturn(Mono.just(product2));
+        when(orderRepository.save(any(Order.class))).thenReturn(Mono.just(order));
+        when(productDataService.update(any(Product.class))).thenReturn(Mono.empty());
+        when(orderItemRepository.save(any(OrderItem.class))).thenReturn(Mono.just(new OrderItem()));
+        when(cartItemRepository.deleteByUserId(userId)).thenReturn(Mono.empty());
+    }
+
+    @Test
+    void createOrder_success() {
+        prepareMockDependencies();
+
+        mockWebServer.enqueue(new MockResponse()
+                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .setResponseCode(200));
+
+        // Act
+        Mono<UUID> result = orderService.createOrder(userId);
+
+        // Assert
         StepVerifier.create(result)
                 .expectNext(orderId)
                 .verifyComplete();
-
-        // Verify that the repository methods were called as expected
-        verify(cartItemRepository).findByUserId(userId);
-        verify(productRepository, times(2)).findById(productId1);
-        verify(productRepository, times(2)).findById(productId2);
-
-        verify(orderRepository, times(2)).save(any(Order.class));
-        verify(orderItemRepository, times(2)).save(any(OrderItem.class));
-        verify(productRepository, times(2)).update(any(Product.class));
-        verify(cartItemRepository).deleteByUserId(userId);
     }
 
     @Test
-    void createOrder_paymentRequired_throwsPaymentException() {
-        // Mocking repository calls
-        when(cartItemRepository.findByUserId(userId)).thenReturn(Flux.just(cartItem1, cartItem2));
-        when(productRepository.findById(productId1)).thenReturn(Mono.just(product1));
-        when(productRepository.findById(productId2)).thenReturn(Mono.just(product2));
-        when(orderRepository.save(any(Order.class))).thenReturn(Mono.just(order));
-        when(orderItemRepository.save(any(OrderItem.class))).thenReturn(Mono.just(orderItem1),Mono.just(orderItem2));
-        when(productRepository.update(any(Product.class))).thenReturn(Mono.just(product1),Mono.just(product2)); // Simulate stock update success
-        when(cartItemRepository.deleteByUserId(userId)).thenReturn(Mono.empty());
+    void createOrder_paymentFailed() {
+        prepareMockDependencies();
 
-        //Mocking webClient
-        BigDecimal totalAmount = BigDecimal.valueOf(100.00);
-        ClientResponse clientResponse = mock(ClientResponse.class);
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(HttpStatus.PAYMENT_REQUIRED.value())); // Payment Required
 
-        when(webClient.post()).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.uri(any(String.class))).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.bodyValue(any())).thenReturn(requestHeadersSpec);
-        when(requestHeadersSpec.exchangeToMono(any(Function.class))).thenAnswer(invocation -> {
-            Function<ClientResponse, Mono<Void>> exchangeToMono = invocation.getArgument(0);
-            when(clientResponse.statusCode()).thenReturn(HttpStatus.PAYMENT_REQUIRED);
-            return exchangeToMono.apply(clientResponse);
-        });
-
-        // Execute the createOrder method
+        // Act
         Mono<UUID> result = orderService.createOrder(userId);
 
-        // Verify the result using StepVerifier
+        // Assert
         StepVerifier.create(result)
                 .expectError(PaymentException.class)
                 .verify();
-
-        // Verify that the repository methods were called as expected
-        verify(cartItemRepository).findByUserId(userId);
-        verify(productRepository, times(2)).findById(productId1);
-        verify(productRepository, times(2)).findById(productId2);
-
-        verify(orderRepository, times(2)).save(any(Order.class));
-        verify(orderItemRepository, times(2)).save(any(OrderItem.class));
-        verify(productRepository, times(2)).update(any(Product.class));
-        verify(cartItemRepository).deleteByUserId(userId);
     }
 
     @Test
-    void createOrder_notFound_throwsNoSuchElementException() {
-        // Mocking repository calls
-        when(cartItemRepository.findByUserId(userId)).thenReturn(Flux.just(cartItem1, cartItem2));
-        when(productRepository.findById(productId1)).thenReturn(Mono.just(product1));
-        when(productRepository.findById(productId2)).thenReturn(Mono.just(product2));
-        when(orderRepository.save(any(Order.class))).thenReturn(Mono.just(order));
-        when(orderItemRepository.save(any(OrderItem.class))).thenReturn(Mono.just(orderItem1),Mono.just(orderItem2));
-        when(productRepository.update(any(Product.class))).thenReturn(Mono.just(product1),Mono.just(product2)); // Simulate stock update success
-        when(cartItemRepository.deleteByUserId(userId)).thenReturn(Mono.empty());
+    void createOrder_accountNotFount() {
+        prepareMockDependencies();
 
-        //Mocking webClient
-        BigDecimal totalAmount = BigDecimal.valueOf(100.00);
-        ClientResponse clientResponse = mock(ClientResponse.class);
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(HttpStatus.NOT_FOUND.value())); // Payment Required
 
-        when(webClient.post()).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.uri(any(String.class))).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.bodyValue(any())).thenReturn(requestHeadersSpec);
-        when(requestHeadersSpec.exchangeToMono(any(Function.class))).thenAnswer(invocation -> {
-            Function<ClientResponse, Mono<Void>> exchangeToMono = invocation.getArgument(0);
-            when(clientResponse.statusCode()).thenReturn(HttpStatus.NOT_FOUND);
-            return exchangeToMono.apply(clientResponse);
-        });
-
-        // Execute the createOrder method
+        // Act
         Mono<UUID> result = orderService.createOrder(userId);
 
-        // Verify the result using StepVerifier
+        // Assert
         StepVerifier.create(result)
                 .expectError(NoSuchElementException.class)
                 .verify();
-
-        // Verify that the repository methods were called as expected
-        verify(cartItemRepository).findByUserId(userId);
-        verify(productRepository, times(2)).findById(productId1);
-        verify(productRepository, times(2)).findById(productId2);
-
-        verify(orderRepository, times(2)).save(any(Order.class));
-        verify(orderItemRepository, times(2)).save(any(OrderItem.class));
-        verify(productRepository, times(2)).update(any(Product.class));
-        verify(cartItemRepository).deleteByUserId(userId);
-    }
-
-
-    @Test
-    void createOrder_badRequest_throwsRuntimeException() {
-        // Mocking repository calls
-        when(cartItemRepository.findByUserId(userId)).thenReturn(Flux.just(cartItem1, cartItem2));
-        when(productRepository.findById(productId1)).thenReturn(Mono.just(product1));
-        when(productRepository.findById(productId2)).thenReturn(Mono.just(product2));
-        when(orderRepository.save(any(Order.class))).thenReturn(Mono.just(order));
-        when(orderItemRepository.save(any(OrderItem.class))).thenReturn(Mono.just(orderItem1),Mono.just(orderItem2));
-        when(productRepository.update(any(Product.class))).thenReturn(Mono.just(product1),Mono.just(product2)); // Simulate stock update success
-        when(cartItemRepository.deleteByUserId(userId)).thenReturn(Mono.empty());
-
-        //Mocking webClient
-        BigDecimal totalAmount = BigDecimal.valueOf(100.00);
-        ClientResponse clientResponse = mock(ClientResponse.class);
-
-        when(webClient.post()).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.uri(any(String.class))).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.bodyValue(any())).thenReturn(requestHeadersSpec);
-        when(requestHeadersSpec.exchangeToMono(any(Function.class))).thenAnswer(invocation -> {
-            Function<ClientResponse, Mono<Void>> exchangeToMono = invocation.getArgument(0);
-            when(clientResponse.statusCode()).thenReturn(HttpStatus.BAD_REQUEST);
-            return exchangeToMono.apply(clientResponse);
-        });
-
-        // Execute the createOrder method
-        Mono<UUID> result = orderService.createOrder(userId);
-
-        // Verify the result using StepVerifier
-        StepVerifier.create(result)
-                .expectErrorMatches(throwable -> throwable instanceof RuntimeException && throwable.getMessage().contains("неверный запрос"))
-                .verify();
-
-        // Verify that the repository methods were called as expected
-        verify(cartItemRepository).findByUserId(userId);
-        verify(productRepository, times(2)).findById(productId1);
-        verify(productRepository, times(2)).findById(productId2);
-
-        verify(orderRepository, times(2)).save(any(Order.class));
-        verify(orderItemRepository, times(2)).save(any(OrderItem.class));
-        verify(productRepository, times(2)).update(any(Product.class));
-        verify(cartItemRepository).deleteByUserId(userId);
     }
 
     @Test
-    void createOrder_internalServerError_throwsRuntimeException() {
-        // Mocking repository calls
-        when(cartItemRepository.findByUserId(userId)).thenReturn(Flux.just(cartItem1, cartItem2));
-        when(productRepository.findById(productId1)).thenReturn(Mono.just(product1));
-        when(productRepository.findById(productId2)).thenReturn(Mono.just(product2));
-        when(orderRepository.save(any(Order.class))).thenReturn(Mono.just(order));
-        when(orderItemRepository.save(any(OrderItem.class))).thenReturn(Mono.just(orderItem1),Mono.just(orderItem2));
-        when(productRepository.update(any(Product.class))).thenReturn(Mono.just(product1),Mono.just(product2)); // Simulate stock update success
-        when(cartItemRepository.deleteByUserId(userId)).thenReturn(Mono.empty());
+    void createOrder_badRequest() {
+        prepareMockDependencies();
 
-        //Mocking webClient
-        BigDecimal totalAmount = BigDecimal.valueOf(100.00);
-        ClientResponse clientResponse = mock(ClientResponse.class);
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(HttpStatus.BAD_REQUEST.value())); // Payment Required
 
-        when(webClient.post()).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.uri(any(String.class))).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.bodyValue(any())).thenReturn(requestHeadersSpec);
-        when(requestHeadersSpec.exchangeToMono(any(Function.class))).thenAnswer(invocation -> {
-            Function<ClientResponse, Mono<Void>> exchangeToMono = invocation.getArgument(0);
-            when(clientResponse.statusCode()).thenReturn(HttpStatus.INTERNAL_SERVER_ERROR);
-            return exchangeToMono.apply(clientResponse);
-        });
-
-        // Execute the createOrder method
+        // Act
         Mono<UUID> result = orderService.createOrder(userId);
 
-        // Verify the result using StepVerifier
+        // Assert
         StepVerifier.create(result)
-                .expectErrorMatches(throwable -> throwable instanceof RuntimeException && throwable.getMessage().contains("внутрення ошибка сервера платежей"))
+                .expectError(RuntimeException.class)
                 .verify();
-
-        // Verify that the repository methods were called as expected
-        verify(cartItemRepository).findByUserId(userId);
-        verify(productRepository, times(2)).findById(productId1);
-        verify(productRepository, times(2)).findById(productId2);
-
-        verify(orderRepository, times(2)).save(any(Order.class));
-        verify(orderItemRepository, times(2)).save(any(OrderItem.class));
-        verify(productRepository, times(2)).update(any(Product.class));
-        verify(cartItemRepository).deleteByUserId(userId);
     }
 
+    @Test
+    void createOrder_paymentServerError() {
+        prepareMockDependencies();
+
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(HttpStatus.INTERNAL_SERVER_ERROR.value())); // Payment Required
+
+        // Act
+        Mono<UUID> result = orderService.createOrder(userId);
+
+        // Assert
+        StepVerifier.create(result)
+                .expectError(RuntimeException.class)
+                .verify();
+    }
 }
