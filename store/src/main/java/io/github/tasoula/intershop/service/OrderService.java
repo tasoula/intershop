@@ -78,33 +78,28 @@ public class OrderService {
                 .all(Boolean::booleanValue); // Проверяем, что все продукты есть в нужном количестве
     }
 
-    public Mono<Void> processPayment(UUID userId, BigDecimal totalAmount) {
+    private Mono<Void> processPayment(UUID userId, BigDecimal totalAmount) {
         Amount amountRequest = new Amount();
         amountRequest.setAmount(totalAmount);
-
         return webClient.post()
                 .uri("/payment/" + userId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(amountRequest)
-                .exchangeToMono(response -> {
-                    if (response.statusCode().equals(HttpStatus.OK)) {
-                        // Successful payment
-                        return Mono.empty(); // Signal completion without data
-                    } else if (response.statusCode().equals(HttpStatus.PAYMENT_REQUIRED)){
-                        throw new PaymentException("Оплата не прошла (недостаточно средств)");
-                    } else if(response.statusCode().equals(HttpStatus.NOT_FOUND)) {
-                        throw new NoSuchElementException("Оплата не прошла (счет не найден)");
-                    } else {
-                        String errorMessage = "Оплата не прошла";
-                        switch (response.statusCode()){
-                            case HttpStatus.BAD_REQUEST -> errorMessage += " (неверный запрос)";
-                            case HttpStatus.INTERNAL_SERVER_ERROR -> errorMessage += " (внутрення ошибка сервера платежей)";
-                            case null, default -> errorMessage += " (Unexpected status code)";
-                        }
-                        String finalErrorMessage = errorMessage;
-                        throw new RuntimeException(finalErrorMessage);
-                    }
-                });
+                .retrieve()
+                .onStatus(HttpStatus.PAYMENT_REQUIRED::equals,
+                        response -> Mono.error(new PaymentException("Оплата не прошла (недостаточно средств)")))
+                .onStatus(HttpStatus.NOT_FOUND::equals,
+                        response -> Mono.error(new NoSuchElementException("Оплата не прошла (счет не найден)")))
+                .onStatus(HttpStatus.BAD_REQUEST::equals,
+                        response -> Mono.error(new RuntimeException("Оплата не прошла (неверный запрос)")))
+                .onStatus(HttpStatus.INTERNAL_SERVER_ERROR::equals,
+                        response -> Mono.error(new RuntimeException("Оплата не прошла (внутрення ошибка сервера платежей)")))
+                .onStatus(status -> !status.is2xxSuccessful(),  // Обработка всех остальных ошибок (не 2xx)
+                        response -> {
+                            String errorMessage = "Оплата не прошла (Unexpected status code): " + response.statusCode();
+                            return Mono.error(new RuntimeException(errorMessage));
+                        })
+                .bodyToMono(Void.class); // Обрабатывает успешный статус (200 OK)
     }
 
     private Mono<UUID> createAndSaveOrder(UUID userId, List<CartItem> cartItems) {

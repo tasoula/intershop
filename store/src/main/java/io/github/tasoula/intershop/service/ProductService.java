@@ -26,6 +26,7 @@ public class ProductService {
 
     public Mono<Page<ProductDto>> findAll(UUID userId, String search, Pageable pageable) {
         return productDataService.findAll(search, pageable)
+                .flatMapMany(Flux::fromIterable)
                 .flatMap(product -> mapToDto(userId, product))
                 .collectList()
                 .zipWith(productDataService.count())
