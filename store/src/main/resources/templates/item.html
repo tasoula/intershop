@@ -8,6 +8,9 @@
 </head>
 
 <body>
+<a href="/catalog/items" style="float:right;">
+    <b>ГЛАВНАЯ &cudarrr;</b>
+</a>
 <div sec:authorize="isAuthenticated()">
     <a href="/orders" style="float:right;">
         <b>ЗАКАЗЫ &cudarrr;</b>
@@ -15,10 +18,16 @@
     <a href="/cart/items" style="float:right;">
         <b>КОРЗИНА &cudarrr;</b>
     </a>
+    <a href="/logout" style="float:right;">
+        <b>Выйти &cudarrr;</b>
+    </a>
 </div>
-<a href="/catalog/items" style="float:right;">
-    <b>ГЛАВНАЯ &cudarrr;</b>
-</a>
+<div sec:authorize="!isAuthenticated()">
+    <a href="/login" style="float:right;">
+        <b>Войти &cudarrr;</b>
+    </a>
+</div>
+
 
 <!-- Обертка для каждого товара. data-item-id и класс item-card -->
 <div class="item-card" style="width:70%;margin-left:auto;margin-right:auto;" th:data-item-id="${item.getId()}">
@@ -33,7 +42,7 @@
         <p th:text="${paragraph}"></p>
     </div>
 
-    <form class="cart-form">
+    <form class="cart-form" sec:authorize="isAuthenticated()">
         <button type="button" name="action" value="MINUS">-</button>
         <span th:text="${item.getQuantity()}"></span>
         <button type="button" name="action" value="PLUS">+</button>
