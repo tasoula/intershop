@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8"/>
     <title>Витрина товаров</title>
@@ -22,13 +22,14 @@
 
 <body>
 <div class="container">
-    <a href="/orders" style="float:right;">
-        <b>ЗАКАЗЫ &cudarrr;</b>
-    </a>
-    <a href="/cart/items" style="float:right;">
-        <b>КОРЗИНА &cudarrr;</b>
-    </a>
-
+    <div sec:authorize="isAuthenticated()">
+        <a href="/orders" style="float:right;">
+            <b>ЗАКАЗЫ &cudarrr;</b>
+        </a>
+        <a href="/cart/items" style="float:right;">
+            <b>КОРЗИНА &cudarrr;</b>
+        </a>
+    </div>
     <div class="filter-form">
         <form>
             <p>

@@ -30,11 +30,17 @@ cookie:
     max:
         age:
             seconds: 86400
-    logging:
-        level:
-    #        org.springframework.r2dbc.core.DefaultDatabaseClient: DEBUG # заодно включим логирование SQL-запросов
+logging:
+    level:
+    #     org.springframework.r2dbc.core.DefaultDatabaseClient: DEBUG # заодно включим логирование SQL-запросов
     #    io.r2dbc: DEBUG # и добавим больше деталей (не включать в настоящем приложении)
-            org.springframework.data.redis: DEBUG
+    #    org:
+    #        springframework:
+    #            data:
+    #                redis: DEBUG
+    #                security: DEBUG
+        org.springframework.security: DEBUG
+
 
 balance:
     service:
