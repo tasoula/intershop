@@ -35,7 +35,7 @@ public class SecurityConfig {
                             exchanges
                                     .pathMatchers("/cart/**", "/orders/**").hasRole("USER")
                                     .pathMatchers("/css/**", "/js/**").permitAll()
-                                    .pathMatchers("/catalog/**", "/login").permitAll()
+                                    .pathMatchers("/catalog/**", "/login", "/test/**").permitAll()
                                     .anyExchange().authenticated();
                         }
                 )
@@ -51,11 +51,17 @@ public class SecurityConfig {
                 // Вход через OAuth 2.0 провайдеров
                 // .oauth2Login()
                 //
-                .logout(logout -> logout.logoutUrl("/"))
+                //.logout(logout -> logout.logoutUrl("/"))
+
                 // Настройка security-заголовков
               //  .headers(headers -> headers
               //          .frameOptions().disable()
              //  )
+                .anonymous(anonymous -> anonymous
+                        .principal("guestUser")
+                        .authorities("ROLE_GUEST")
+                        .key("uniqueAnonymousKey")
+                )
                 // Настройка обработки ошибок
                 .exceptionHandling(handling -> handling
                         .accessDeniedHandler((exchange, denied) ->
