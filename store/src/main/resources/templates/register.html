@@ -2,12 +2,11 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <meta charset="UTF-8"/>
 <head>
-    <title>Login</title>
+    <title>Register</title>
 </head>
 <body>
-<h1 style="text-align:center" th:if="${newUser}">Successfully registered! &#128578;</h1>
-<h1 style="text-align:center">Login</h1>
-<form style="text-align:center" th:action="@{/login}" method="post">
+<h1 style="text-align:center">Register</h1>
+<form style="text-align:center" th:action="@{/register}" method="post">
     <div>
         <label for="username">Username:</label>
         <input type="text" id="username" name="username" required/>
@@ -17,7 +16,7 @@
         <input type="password" id="password" name="password" required/>
     </div>
     <div>
-        <button type="submit">Sign in</button>
+        <button type="submit">Sign up</button>
     </div>
 </form>
 </body>

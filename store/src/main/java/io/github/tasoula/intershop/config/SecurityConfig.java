@@ -35,7 +35,7 @@ public class SecurityConfig {
                             exchanges
                                     .pathMatchers("/cart/**", "/orders/**").hasRole("USER")
                                     .pathMatchers("/css/**", "/js/**").permitAll()
-                                    .pathMatchers("/catalog/**", "/login", "/test/**").permitAll()
+                                    .pathMatchers("/catalog/**", "/login", "/register", "/test/**").permitAll()
                                     .anyExchange().authenticated();
                         }
                 )
@@ -68,25 +68,6 @@ public class SecurityConfig {
                                 Mono.error(new AccessDeniedException("Access Denied")))
                 )
                 .build();
-    }
-
-    @Bean
-    public MapReactiveUserDetailsService userDetailsService() {
-        PasswordEncoder encoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
-
-        UserDetails user = User.builder()
-                .username("user")
-                .password(encoder.encode("password")) // Замените на надежный пароль!
-                .roles("USER")
-                .build();
-
-        UserDetails admin = User.builder()
-                .username("admin")
-                .password(encoder.encode("admin")) // Замените на надежный пароль!
-                .roles("ADMIN", "USER")
-                .build();
-
-        return new MapReactiveUserDetailsService(user, admin);
     }
 
     @Bean
