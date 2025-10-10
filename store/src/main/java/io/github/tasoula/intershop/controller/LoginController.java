@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.WebSession;
 import reactor.core.publisher.Mono;
@@ -47,7 +48,7 @@ public class LoginController {
     }
 
     @PostMapping("/register")
-    public Mono<String> create(@ModelAttribute UserRegistrationDto userRegistrationDto) {
+    public Mono<String> create(@ModelAttribute UserRegistrationDto userRegistrationDto, Model model) {
         PasswordEncoder encoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
         User user = new User();
         user.setUserName(userRegistrationDto.getUsername());
@@ -56,7 +57,10 @@ public class LoginController {
                 : List.of("ROLE_ADMIN", "ROLE_USER");
 
         return userDetailService.saveUser(user, authorities)
-                .map(r -> "redirect:/login?newUser=true")
+                .flatMap(r -> {
+                    model.addAttribute("newUser", true); //todo
+                    return Mono.just("redirect:/login?newUser=true");
+                })
                 .switchIfEmpty(Mono.just("redirect:/register?alreadyExists=true"));
               //  .thenReturn(
               //  ResponseEntity.status(HttpStatus.FOUND)
