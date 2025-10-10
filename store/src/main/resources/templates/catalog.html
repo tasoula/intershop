@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8"/>
     <title>Витрина товаров</title>
@@ -18,17 +18,41 @@
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script th:src="@{/js/cart.js}"></script>
+ <!--   <script th:inline="javascript">
+        /*<![CDATA[*/
+        $(document).ready(function() {
+            if ([[${#authorization.expression('isAnonymous()')}]] ) {
+                $('#anonymous-links').show();
+            } else {
+                $('#authenticated-links').show();
+            }
+        });
+        /*]]>*/
+    </script>-->
 </head>
 
 <body>
 <div class="container">
-    <a href="/orders" style="float:right;">
-        <b>ЗАКАЗЫ &cudarrr;</b>
-    </a>
-    <a href="/cart/items" style="float:right;">
-        <b>КОРЗИНА &cudarrr;</b>
-    </a>
-
+    <div sec:authorize="isAuthenticated()">
+    <!-- <div id="authenticated-links" style="display: none;">-->
+         <a href="/orders" style="float:right;">
+             <b>ЗАКАЗЫ &cudarrr;</b>
+         </a>
+         <a href="/cart/items" style="float:right;">
+             <b>КОРЗИНА &cudarrr;</b>
+         </a>
+         <a href="/logout" style="float:right;">
+             <b>Выйти &cudarrr;</b>
+         </a>
+     </div>
+    <div sec:authorize="isAnonymous()">
+        <a href="/login" style="float:right;">
+            <b>Войти &cudarrr;</b>
+        </a>
+        <a href="/register" style="float:right;">
+            <b>Зарегистрироваться &cudarrr;</b>
+        </a>
+    </div>
     <div class="filter-form">
         <form>
             <p>
@@ -69,7 +93,7 @@
             </a>
             <div class="item-title" th:text="${item.getTitle()}"></div>
             <div class="item-price" th:text="${item.getPrice() + ' руб.'}"></div>
-            <form class="cart-form">
+            <form  class="cart-form" sec:authorize="isAuthenticated()" >
                 <button type="button" name="action" value="MINUS">-</button>
                 <span th:text="${item.getQuantity()}"></span>
                 <button type="button" name="action" value="PLUS">+</button>

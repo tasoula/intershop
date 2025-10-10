@@ -1,7 +1,10 @@
 package io.github.tasoula.intershop.controller;
 
 import io.github.tasoula.intershop.exceptions.ResourceNotFoundException;
+import io.github.tasoula.intershop.model.User;
 import io.github.tasoula.intershop.service.OrderService;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -9,7 +12,6 @@ import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 
-import static io.github.tasoula.intershop.interceptor.CookieConst.USER_ID;
 
 @Controller
 @RequestMapping("/orders")
@@ -21,13 +23,20 @@ public class OrderController {
     }
 
     @GetMapping
-    public Mono<String> show(@CookieValue(USER_ID) UUID userId,  Model model) {
-        return service.getByUserId(userId)
-                        .collectList()
-                                .flatMap(items -> {
-                                    model.addAttribute("orders", items);
-                                    return Mono.just("orders.html");
-                                });
+    public Mono<String> show(@AuthenticationPrincipal Mono<UserDetails> userDetailsMono,
+                             Model model) {
+        return userDetailsMono.cast(User.class)
+                .switchIfEmpty(Mono.just(new User()))
+                .flatMap(user -> {
+                    UUID userId = user.getId();
+
+                    return service.getByUserId(userId)
+                            .collectList()
+                            .flatMap(items -> {
+                                model.addAttribute("orders", items);
+                                return Mono.just("orders.html");
+                            });
+                });
     }
 
     @GetMapping("{id}")
@@ -48,11 +57,14 @@ public class OrderController {
     }
 
     @PostMapping("new")
-    public Mono<String> createOrder(@CookieValue(USER_ID) UUID userId, Model model) {
-        return service.createOrder(userId)
-                .map(orderId -> "redirect:/orders/" + orderId + "?newOrder=true")
-                .switchIfEmpty(Mono.just("redirect:/cart/items"));
+    public Mono<String> createOrder(@AuthenticationPrincipal Mono<UserDetails> userDetailsMono,
+                                    Model model) {
+        return userDetailsMono.cast(User.class)
+                .switchIfEmpty(Mono.just(new User()))
+                .flatMap(user -> {
+                    return service.createOrder(user.getId())
+                            .map(orderId -> "redirect:/orders/" + orderId + "?newOrder=true")
+                            .switchIfEmpty(Mono.just("redirect:/cart/items"));
+                });
     }
-
-
 }
