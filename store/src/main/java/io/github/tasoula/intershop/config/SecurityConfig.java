@@ -28,12 +28,13 @@ public class SecurityConfig {
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
         return http
                 // Отключение CSRF-защиты
-                .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                //.csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .securityContextRepository(new WebSessionServerSecurityContextRepository())
                 .authorizeExchange(// Аналог authorizeHttpRequests()
                         exchanges -> {
                             exchanges
                                     .pathMatchers("/cart/**", "/orders/**").hasRole("USER")
+                                    .pathMatchers("/catalog/products/new").hasRole("ADMIN")
                                     .pathMatchers("/css/**", "/js/**").permitAll()
                                     .pathMatchers("/catalog/**", "/login", "/register", "/test/**").permitAll()
                                     .anyExchange().authenticated();
