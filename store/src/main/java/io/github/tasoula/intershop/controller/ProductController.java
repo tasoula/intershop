@@ -1,23 +1,28 @@
 package io.github.tasoula.intershop.controller;
 
 import io.github.tasoula.intershop.dto.ProductDto;
+import io.github.tasoula.intershop.model.User;
 import io.github.tasoula.intershop.service.ProductService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
+import org.springframework.security.core.context.*;
 
 import java.net.URI;
 import java.util.UUID;
 
-import static io.github.tasoula.intershop.interceptor.CookieConst.USER_ID;
-
+@Slf4j
 @Controller
 @RequestMapping("/catalog")
 public class ProductController {
@@ -40,7 +45,7 @@ public class ProductController {
 
     @GetMapping("items")
     public Mono<String> showItems(
-            @CookieValue(USER_ID) UUID userId,
+            @AuthenticationPrincipal Mono<UserDetails> userDetailsMono,
             @RequestParam(name = "search", required = false) String search,
             @RequestParam(name = "sort", required = false, defaultValue = "NO") String sort,
             @RequestParam(name = "pageSize", required = false, defaultValue = "10") Integer pageSize,
@@ -59,24 +64,40 @@ public class ProductController {
 
         Pageable pageable = PageRequest.of(pageNumber, pageSize, sortObj);
 
-        return service.findAll(userId, search, pageable)
-                .doOnNext(productPage -> { // Обрабатываем полученный Page<ProductDto>
-                    model.addAttribute("search", search);
-                    model.addAttribute("sort", sort);
-                    model.addAttribute("paging", productPage);
-                    model.addAttribute("items", productPage.getContent());
+        return userDetailsMono.cast(User.class)
+                .switchIfEmpty(Mono.just(new User()))
+                .flatMap(user -> {
+                    return service.findAll(user.getId(), search, pageable)
+                            .doOnNext(productPage -> {
+                                model.addAttribute("search", search);
+                                model.addAttribute("sort", sort);
+                                model.addAttribute("paging", productPage);
+                                model.addAttribute("items", productPage.getContent());
+                            })
+                            .thenReturn("catalog.html");
                 })
-                .thenReturn("catalog.html"); // Возвращаем имя шаблона, после добавления атрибутов в модель
+                .onErrorResume(e -> {
+                    e.printStackTrace();
+                    log.error("-----Ошибка при обработке запроса items: {}", e.getMessage(), e);
+                    model.addAttribute("errorMessage", "Произошла ошибка при загрузке данных.");
+                    return Mono.just("oops.html");
+                });
+
     }
 
     @GetMapping("items/{id}")
-    public Mono<String> showItemById(@CookieValue(USER_ID) UUID userId, @PathVariable("id") UUID id, Model model) {
-        return service.findById(userId, id)
-                .doOnNext(productDto -> {
-                    model.addAttribute("item", productDto);
-                })
-                .thenReturn("item.html");
+    public Mono<String> showItemById(@AuthenticationPrincipal Mono<UserDetails> userDetailsMono, @PathVariable("id") UUID id, Model model) {
+        return userDetailsMono.cast(User.class)
+                .switchIfEmpty(Mono.just(new User()))
+                .flatMap(user -> {
+                    return service.findById(user.getId(), id)
+                            .doOnNext(productDto -> {
+                                model.addAttribute("item", productDto);
+                            })
+                            .thenReturn("item.html");
+                });
     }
+
 
     @GetMapping("/products/new")
     public Mono<String> newProductForm(Model model) {

@@ -65,7 +65,7 @@ services:
       INTERSHOP_DB_PASSWORD: ${INTERSHOP_DB_PASSWORD}
       REDIS_HOST: redis-server
       PAYMENT_SERVICE_HOST: payment-service
-      COOKIE_MAX_AGE_SECONDS: 86400
+    #  COOKIE_MAX_AGE_SECONDS: 86400
       UPLOAD_IMAGES_DIR: /app/images
     networks:
       - mynetwork

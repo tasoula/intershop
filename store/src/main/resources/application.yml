@@ -26,12 +26,8 @@ spring:
 
 upload.images.dir: ${UPLOAD_IMAGES_DIR:/app/images}
 
-cookie:
-    max:
-        age:
-            seconds: 86400
-logging:
-    level:
+#logging:
+#    level:
     #     org.springframework.r2dbc.core.DefaultDatabaseClient: DEBUG # заодно включим логирование SQL-запросов
     #    io.r2dbc: DEBUG # и добавим больше деталей (не включать в настоящем приложении)
     #    org:
@@ -39,7 +35,7 @@ logging:
     #            data:
     #                redis: DEBUG
     #                security: DEBUG
-        org.springframework.security: DEBUG
+    #    org.springframework.security: DEBUG
 
 
 balance:
