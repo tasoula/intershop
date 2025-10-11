@@ -1,3 +1,6 @@
+server:
+    port: 8080
+
 spring:
     application:
         name: Internet Shop
@@ -23,6 +26,22 @@ spring:
             cache:
                 redis:
                     time-to-live: PT5S    # TTL по умолчанию для кешей
+
+    security:
+        oauth2:
+            client:
+                provider:
+                    keycloak:
+                        issuer-uri: http://localhost:8082/realms/master # Адрес сервера авторизации для получения токена
+                registration:
+                    store: # название конкретного клиента
+                        # Описание клиента OAuth2
+                        provider: keycloak
+                        authorizationGrantType: client_credentials
+                        client-id: internet-shop
+                        client-secret: SVS8gpjFD2Gm2ZAqcgbCzAaLxAJyfcXJ
+                    #    scope: profile #нужно (только зачем?) настрить роли, соответствующие scope (в Keycloak в разделе "Clients -> [ваш клиент] -> Roles")
+                        clientAuthenticationMethod: client_secret_post # Способ передачи секрета
 
 upload.images.dir: ${UPLOAD_IMAGES_DIR:/app/images}
 

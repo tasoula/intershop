@@ -184,7 +184,7 @@ RESTful-сервис платежей:
 ```
 2. Запустите сервер авторизации Keycloack
 ```bash
-docker run -d -p 8082:8082 --name keycloak ^
+docker run -d -p 8082:8080 --name keycloak ^
   -e KC_BOOTSTRAP_ADMIN_USERNAME=admin ^
   -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin ^
   quay.io/keycloak/keycloak:26.1.3 start-dev

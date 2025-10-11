@@ -18,3 +18,9 @@ spring:
       max-size: 20
       initial-size: 10
       validation-query: SELECT 1 # Проверка доступности соединения
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8082/realms/master
