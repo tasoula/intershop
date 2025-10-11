@@ -56,8 +56,9 @@ public class LoginController {
         User user = new User();
         user.setUserName(userRegistrationDto.getUsername());
         user.setPassword(passwordEncoder.encode(userRegistrationDto.getPassword()));
-        List<String> authorities = userRegistrationDto.isAdmin() ? List.of("ROLE_USER")
-                : List.of("ROLE_ADMIN", "ROLE_USER");
+        List<String> authorities = (userRegistrationDto.getIsAdmin() != null &&  userRegistrationDto.getIsAdmin())
+                ? List.of("ROLE_ADMIN","ROLE_USER")
+                : List.of("ROLE_USER");
 
         return userDetailService.saveUser(user, authorities)
                 .flatMap(r -> {
