@@ -10,8 +10,13 @@ import io.github.tasoula.intershop.exceptions.PaymentException;
 import io.github.tasoula.intershop.model.CartItem;
 import io.github.tasoula.intershop.model.Order;
 import io.github.tasoula.intershop.model.OrderItem;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -32,16 +37,19 @@ public class OrderService {
     private final CartItemRepository cartItemRepository;
     private final ProductDataService productDataService;
     private final WebClient webClient;
+    private final ReactiveOAuth2AuthorizedClientManager manager;
     public OrderService(OrderRepository orderRepository,
                         OrderItemRepository orderItemRepository,
                         CartItemRepository cartItemRepository,
                         ProductDataService productDataService,
-                        WebClient balanceWebClient) {
+                        WebClient balanceWebClient,
+                        ReactiveOAuth2AuthorizedClientManager manager) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.cartItemRepository = cartItemRepository;
         this.productDataService = productDataService;
         this.webClient = balanceWebClient;
+        this.manager = manager;
     }
 
     public Mono<OrderDto> getById(UUID id) {
@@ -81,25 +89,34 @@ public class OrderService {
     private Mono<Void> processPayment(UUID userId, BigDecimal totalAmount) {
         Amount amountRequest = new Amount();
         amountRequest.setAmount(totalAmount);
-        return webClient.post()
-                .uri("/payment/" + userId.toString())
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(amountRequest)
-                .retrieve()
-                .onStatus(HttpStatus.PAYMENT_REQUIRED::equals,
-                        response -> Mono.error(new PaymentException("Оплата не прошла (недостаточно средств)")))
-                .onStatus(HttpStatus.NOT_FOUND::equals,
-                        response -> Mono.error(new NoSuchElementException("Оплата не прошла (счет не найден)")))
-                .onStatus(HttpStatus.BAD_REQUEST::equals,
-                        response -> Mono.error(new RuntimeException("Оплата не прошла (неверный запрос)")))
-                .onStatus(HttpStatus.INTERNAL_SERVER_ERROR::equals,
-                        response -> Mono.error(new RuntimeException("Оплата не прошла (внутрення ошибка сервера платежей)")))
-                .onStatus(status -> !status.is2xxSuccessful(),  // Обработка всех остальных ошибок (не 2xx)
-                        response -> {
-                            String errorMessage = "Оплата не прошла (Unexpected status code): " + response.statusCode();
-                            return Mono.error(new RuntimeException(errorMessage));
-                        })
-                .bodyToMono(Void.class); // Обрабатывает успешный статус (200 OK)
+        return manager.authorize(OAuth2AuthorizeRequest
+                                .withClientRegistrationId("store")
+                                .principal("system") //??? У client_credentials нет имени пользователя, поэтому будем использовать system
+                                .build()) // Mono<OAuth2AuthorizedClient>
+                        .map(OAuth2AuthorizedClient::getAccessToken)
+                        .map(OAuth2AccessToken::getTokenValue)
+                        .flatMap(accessToken -> webClient.post()
+                                            .uri("/payment/" + userId.toString())
+                                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                                            .contentType(MediaType.APPLICATION_JSON)
+                                            .bodyValue(amountRequest)
+                                            .retrieve()
+                                            .onStatus(HttpStatus.PAYMENT_REQUIRED::equals,
+                                                    response -> Mono.error(new PaymentException("Оплата не прошла (недостаточно средств)")))
+                                            .onStatus(HttpStatus.NOT_FOUND::equals,
+                                                    response -> Mono.error(new NoSuchElementException("Оплата не прошла (счет не найден)")))
+                                            .onStatus(HttpStatus.BAD_REQUEST::equals,
+                                                    response -> Mono.error(new RuntimeException("Оплата не прошла (неверный запрос)")))
+                                            .onStatus(HttpStatus.INTERNAL_SERVER_ERROR::equals,
+                                                    response -> Mono.error(new RuntimeException("Оплата не прошла (внутрення ошибка сервера платежей)")))
+                                            .onStatus(status -> !status.is2xxSuccessful(),  // Обработка всех остальных ошибок (не 2xx)
+                                                    response -> {
+                                                        String errorMessage = "Оплата не прошла (Unexpected status code): " + response.statusCode();
+                                                        return Mono.error(new RuntimeException(errorMessage));
+                                                    })
+                                            .bodyToMono(Void.class)// Обрабатывает успешный статус (200 OK)
+
+                        );
     }
 
     private Mono<UUID> createAndSaveOrder(UUID userId, List<CartItem> cartItems) {

@@ -37,9 +37,6 @@ public class SecurityConfig {
                                     .anyExchange().authenticated();
                         }
                 )
-                // Поддержка HTTP Basic аутентификации
-                // .httpBasic()
-
                 // Форма логина для пользователей
                 .formLogin(form -> form
                         .loginPage("/login")
