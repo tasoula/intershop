@@ -20,6 +20,7 @@ import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClient
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -89,37 +90,47 @@ public class OrderService {
                 .all(Boolean::booleanValue); // Проверяем, что все продукты есть в нужном количестве
     }
 
+
     private Mono<Void> processPayment(UUID userId, BigDecimal totalAmount) {
         Amount amountRequest = new Amount();
         amountRequest.setAmount(totalAmount);
-        return manager.authorize(OAuth2AuthorizeRequest
-                                .withClientRegistrationId("store")
-                                .principal("system") //??? У client_credentials нет имени пользователя, поэтому будем использовать system
-                                .build()) // Mono<OAuth2AuthorizedClient>
-                        .map(OAuth2AuthorizedClient::getAccessToken)
-                        .map(OAuth2AccessToken::getTokenValue)
-                        .flatMap(accessToken -> webClient.post()
-                                            .uri("/payment/" + userId.toString())
-                                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-                                            .contentType(MediaType.APPLICATION_JSON)
-                                            .bodyValue(amountRequest)
-                                            .retrieve()
-                                            .onStatus(HttpStatus.PAYMENT_REQUIRED::equals,
-                                                    response -> Mono.error(new PaymentException("Оплата не прошла (недостаточно средств)")))
-                                            .onStatus(HttpStatus.NOT_FOUND::equals,
-                                                    response -> Mono.error(new NoSuchElementException("Оплата не прошла (счет не найден)")))
-                                            .onStatus(HttpStatus.BAD_REQUEST::equals,
-                                                    response -> Mono.error(new RuntimeException("Оплата не прошла (неверный запрос)")))
-                                            .onStatus(HttpStatus.INTERNAL_SERVER_ERROR::equals,
-                                                    response -> Mono.error(new RuntimeException("Оплата не прошла (внутрення ошибка сервера платежей)")))
-                                            .onStatus(status -> !status.is2xxSuccessful(),  // Обработка всех остальных ошибок (не 2xx)
-                                                    response -> {
-                                                        String errorMessage = "Оплата не прошла (Unexpected status code): " + response.statusCode();
-                                                        return Mono.error(new RuntimeException(errorMessage));
-                                                    })
-                                            .bodyToMono(Void.class)// Обрабатывает успешный статус (200 OK)
 
-                        );
+        return manager.authorize(OAuth2AuthorizeRequest
+                        .withClientRegistrationId("store")
+                        .principal("system") //??? У client_credentials нет имени пользователя, поэтому будем использовать system
+                        .build())
+                .map(OAuth2AuthorizedClient::getAccessToken)
+                .map(OAuth2AccessToken::getTokenValue)
+                .flatMap(accessToken -> webClient.post()
+                        .uri("/payment/" + userId.toString())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(amountRequest)
+                        .retrieve()
+                        .onStatus(status -> !status.is2xxSuccessful(), this::handlePaymentErrorStatus)
+                        .bodyToMono(Void.class));
+    }
+
+    private Mono<? extends Throwable> handlePaymentErrorStatus(ClientResponse response) {
+        HttpStatus status = (HttpStatus) response.statusCode();
+
+        if (HttpStatus.PAYMENT_REQUIRED.equals(status)) {
+            return Mono.error(new PaymentException("Оплата не прошла (недостаточно средств)"));
+        } else if (HttpStatus.NOT_FOUND.equals(status)) {
+            return Mono.error(new NoSuchElementException("Оплата не прошла (счет не найден)"));
+        } else if (HttpStatus.BAD_REQUEST.equals(status)) {
+            return Mono.error(new RuntimeException("Оплата не прошла (неверный запрос)"));
+        } else if (HttpStatus.INTERNAL_SERVER_ERROR.equals(status)) {
+            return Mono.error(new RuntimeException("Оплата не прошла (внутрення ошибка сервера платежей)"));
+        } else if (HttpStatus.FORBIDDEN.equals(status)) {
+            return Mono.error(new RuntimeException("Доступ запрещен"));
+        } else if (HttpStatus.UNAUTHORIZED.equals(status)) {
+            return Mono.error(new RuntimeException("Ошибка аутентификации"));
+        }
+        else {
+            String errorMessage = "Оплата не прошла (Unexpected status code): " + status;
+            return Mono.error(new RuntimeException(errorMessage));
+        }
     }
 
     private Mono<UUID> createAndSaveOrder(UUID userId, List<CartItem> cartItems) {
