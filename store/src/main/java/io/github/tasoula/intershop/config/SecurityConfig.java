@@ -27,13 +27,13 @@ public class SecurityConfig {
                 // Отключение CSRF-защиты
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .securityContextRepository(new WebSessionServerSecurityContextRepository())
-                .authorizeExchange(// Аналог authorizeHttpRequests()
+                .authorizeExchange(
                         exchanges -> {
                             exchanges
                                     .pathMatchers("/cart/**", "/orders/**").hasRole("USER")
-                                    .pathMatchers("/catalog/products/**").hasRole("ADMIN")
+                                    .pathMatchers("/catalog/products/new").hasRole("ADMIN")
                                     .pathMatchers("/css/**", "/js/**").permitAll()
-                                    .pathMatchers("/catalog/**", "/login", "/register", "/test/**").permitAll()
+                                    .pathMatchers("/catalog/**", "/login", "/register").permitAll()
                                     .anyExchange().authenticated();
                         }
                 )
@@ -41,17 +41,7 @@ public class SecurityConfig {
                 .formLogin(form -> form
                         .loginPage("/login")
                         .authenticationSuccessHandler(successHandler())
-                      //  .permitAll()
                 )
-                // Вход через OAuth 2.0 провайдеров
-                // .oauth2Login()
-                //
-                //.logout(logout -> logout.logoutUrl("/"))
-
-                // Настройка security-заголовков
-              //  .headers(headers -> headers
-              //          .frameOptions().disable()
-             //  )
                 .anonymous(anonymous -> anonymous
                         .principal("guestUser")
                         .authorities("ROLE_GUEST")

@@ -6,6 +6,7 @@ import io.github.tasoula.intershop.dto.ProductDto;
 import io.github.tasoula.intershop.exceptions.ResourceNotFoundException;
 import io.github.tasoula.intershop.model.CartItem;
 import org.springframework.http.HttpHeaders;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientManager;
@@ -38,6 +39,7 @@ public class CartService {
         this.manager = manager;
     }
 
+    @PreAuthorize("hasRole('USER') && principal.id == #userId")
     public Flux<ProductDto> findByUserId(UUID userId) {
         return cartItemRepository.findByUserIdOrderByCreatedAtDesc(userId)
                 .flatMap(cartItem -> productDataService.findById(cartItem.getProductId())
@@ -53,6 +55,7 @@ public class CartService {
                 .defaultIfEmpty(0); // Если нет записи в корзине, то 0
     }
 
+    @PreAuthorize("hasRole('USER') && principal.id == #userId")
     @Transactional
     public Mono<Integer> changeProductQuantityInCart(UUID userId, UUID productId, int changeQuantity) {
         return productDataService.findById(productId)
@@ -74,20 +77,24 @@ public class CartService {
                         }));
     }
 
+    @PreAuthorize("hasRole('USER') && principal.id == #userId")
     @Transactional
     public Mono<Void> deleteCartItem(UUID userId, UUID productId) {
         return cartItemRepository.deleteByUserIdAndProductId(userId, productId);
     }
 
+    @PreAuthorize("hasRole('USER') && principal.id == #userId")
     public Mono<BigDecimal> calculateTotalPriceByUserId(UUID userId) {
         return cartItemRepository.calculateTotalPriceByUserId(userId)
                 .switchIfEmpty(Mono.just(BigDecimal.ZERO));
     }
 
+    @PreAuthorize("hasRole('USER') && principal.id == #userId")
     public Mono<Boolean> isEmpty(UUID userId) {
         return cartItemRepository.existsByUserId(userId).map(exists -> !exists);
     }
 
+    @PreAuthorize("hasRole('USER') && principal.id == #userId")
     public Mono<Boolean> isAvailable(UUID userId) {
         return calculateTotalPriceByUserId(userId)
                 .flatMap(totalCartPrice -> getAmount(userId)

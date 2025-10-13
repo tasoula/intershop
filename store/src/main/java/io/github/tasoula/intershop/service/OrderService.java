@@ -13,6 +13,7 @@ import io.github.tasoula.intershop.model.OrderItem;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientManager;
@@ -52,17 +53,19 @@ public class OrderService {
         this.manager = manager;
     }
 
+
     public Mono<OrderDto> getById(UUID id) {
         return orderRepository.findById(id)
                 .flatMap(this::convertToDto);
     }
 
-
+    @PreAuthorize("hasRole('USER') && principal.id == #userId")
     public Flux<OrderDto> getByUserId(UUID userId) {
         return orderRepository.findByUserId(userId)
                 .flatMap(this::convertToDto);
     }
 
+    @PreAuthorize("hasRole('USER') && principal.id == #userId")
     @Transactional
     public Mono<UUID> createOrder(UUID userId) {
         // Получаем все элементы корзины пользователя
@@ -171,7 +174,7 @@ public class OrderService {
                 .collectList();
     }
 
-    public Mono<OrderDto> convertToDto(Order order) {
+    private Mono<OrderDto> convertToDto(Order order) {
         return orderItemRepository.findByOrderId(order.getId())
                 .flatMap(this::convertToProductDto)  // Используем отдельный метод для преобразования
                 .collectList()

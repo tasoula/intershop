@@ -104,7 +104,7 @@ public class ProductController {
         return Mono.just("new-product");
     }
 
-    @PostMapping(value = "products", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/products/new", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public Mono<String> createProduct(@RequestPart("image") Mono<FilePart> image,
                                       @ModelAttribute ProductDto productDto) {
         return image.flatMap(filePart -> {
