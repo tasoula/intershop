@@ -33,7 +33,6 @@ public class User implements UserDetails {
     private String password;
     @Transient
     private Collection<? extends GrantedAuthority> authorities;
-    //private Collection<String> authorities;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

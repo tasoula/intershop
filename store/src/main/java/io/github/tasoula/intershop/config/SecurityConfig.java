@@ -25,36 +25,23 @@ public class SecurityConfig {
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
         return http
                 // Отключение CSRF-защиты
-                //.csrf(ServerHttpSecurity.CsrfSpec::disable)
+                .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .securityContextRepository(new WebSessionServerSecurityContextRepository())
-                .authorizeExchange(// Аналог authorizeHttpRequests()
+                .authorizeExchange(
                         exchanges -> {
                             exchanges
                                     .pathMatchers("/cart/**", "/orders/**").hasRole("USER")
                                     .pathMatchers("/catalog/products/new").hasRole("ADMIN")
                                     .pathMatchers("/css/**", "/js/**").permitAll()
-                                    .pathMatchers("/catalog/**", "/login", "/register", "/test/**").permitAll()
+                                    .pathMatchers("/catalog/**", "/login", "/register").permitAll()
                                     .anyExchange().authenticated();
                         }
                 )
-                // Поддержка HTTP Basic аутентификации
-                // .httpBasic()
-
                 // Форма логина для пользователей
                 .formLogin(form -> form
                         .loginPage("/login")
                         .authenticationSuccessHandler(successHandler())
-                      //  .permitAll()
                 )
-                // Вход через OAuth 2.0 провайдеров
-                // .oauth2Login()
-                //
-                //.logout(logout -> logout.logoutUrl("/"))
-
-                // Настройка security-заголовков
-              //  .headers(headers -> headers
-              //          .frameOptions().disable()
-             //  )
                 .anonymous(anonymous -> anonymous
                         .principal("guestUser")
                         .authorities("ROLE_GUEST")

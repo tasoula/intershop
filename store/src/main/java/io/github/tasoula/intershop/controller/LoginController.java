@@ -5,12 +5,12 @@ import io.github.tasoula.intershop.model.User;
 import io.github.tasoula.intershop.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.server.WebSession;
 import reactor.core.publisher.Mono;
 
@@ -56,8 +56,9 @@ public class LoginController {
         User user = new User();
         user.setUserName(userRegistrationDto.getUsername());
         user.setPassword(passwordEncoder.encode(userRegistrationDto.getPassword()));
-        List<String> authorities = userRegistrationDto.isAdmin() ? List.of("ROLE_USER")
-                : List.of("ROLE_ADMIN", "ROLE_USER");
+        List<String> authorities = (userRegistrationDto.getIsAdmin() != null &&  userRegistrationDto.getIsAdmin())
+                ? List.of("ROLE_ADMIN","ROLE_USER")
+                : List.of("ROLE_USER");
 
         return userDetailService.saveUser(user, authorities)
                 .flatMap(r -> {
