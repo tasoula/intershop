@@ -5,6 +5,12 @@ import io.github.tasoula.intershop.dao.CartItemRepository;
 import io.github.tasoula.intershop.dto.ProductDto;
 import io.github.tasoula.intershop.exceptions.ResourceNotFoundException;
 import io.github.tasoula.intershop.model.CartItem;
+import org.springframework.http.HttpHeaders;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -16,20 +22,24 @@ import java.util.UUID;
 
 @Service
 public class CartService {
-
     private final CartItemRepository cartItemRepository;
     private final ProductDataService productDataService;
 
     private final WebClient webClient;
 
+    private final ReactiveOAuth2AuthorizedClientManager manager;
+
     public CartService(CartItemRepository cartItemRepository,
                        ProductDataService productDataService,
-                       WebClient balanceWebClient) {
+                       WebClient balanceWebClient,
+                       ReactiveOAuth2AuthorizedClientManager manager) {
         this.cartItemRepository = cartItemRepository;
         this.productDataService = productDataService;
         this.webClient = balanceWebClient;
+        this.manager = manager;
     }
 
+    @PreAuthorize("hasRole('USER') && principal.id == #userId")
     public Flux<ProductDto> findByUserId(UUID userId) {
         return cartItemRepository.findByUserIdOrderByCreatedAtDesc(userId)
                 .flatMap(cartItem -> productDataService.findById(cartItem.getProductId())
@@ -45,9 +55,10 @@ public class CartService {
                 .defaultIfEmpty(0); // Если нет записи в корзине, то 0
     }
 
+    @PreAuthorize("hasRole('USER') && principal.id == #userId")
     @Transactional
     public Mono<Integer> changeProductQuantityInCart(UUID userId, UUID productId, int changeQuantity) {
-        return  productDataService.findById(productId)
+        return productDataService.findById(productId)
                 .switchIfEmpty(Mono.error(() -> new ResourceNotFoundException("Product with id " + productId + " not found.")))
                 .flatMap(product -> cartItemRepository.findByUserIdAndProductId(userId, productId)
                         .switchIfEmpty(Mono.just(new CartItem(userId, productId))) // Создаем новый CartItem с quantity = 0
@@ -66,29 +77,44 @@ public class CartService {
                         }));
     }
 
+    @PreAuthorize("hasRole('USER') && principal.id == #userId")
     @Transactional
     public Mono<Void> deleteCartItem(UUID userId, UUID productId) {
         return cartItemRepository.deleteByUserIdAndProductId(userId, productId);
     }
 
+    @PreAuthorize("hasRole('USER') && principal.id == #userId")
     public Mono<BigDecimal> calculateTotalPriceByUserId(UUID userId) {
         return cartItemRepository.calculateTotalPriceByUserId(userId)
                 .switchIfEmpty(Mono.just(BigDecimal.ZERO));
     }
 
+    @PreAuthorize("hasRole('USER') && principal.id == #userId")
     public Mono<Boolean> isEmpty(UUID userId) {
         return cartItemRepository.existsByUserId(userId).map(exists -> !exists);
     }
 
+    @PreAuthorize("hasRole('USER') && principal.id == #userId")
     public Mono<Boolean> isAvailable(UUID userId) {
         return calculateTotalPriceByUserId(userId)
-                .flatMap(totalCartPrice ->
-                        webClient.get()
-                                .uri("/balance/" + userId.toString())
-                                .retrieve()
-                                .bodyToMono(Amount.class)
-                                .map(amount -> amount.getAmount().compareTo(totalCartPrice) >= 0)
-                                .defaultIfEmpty(false) // Обработка случая, когда ответ от сервиса баланса пустой или ошибка
+                .flatMap(totalCartPrice -> getAmount(userId)
+                        .map(amount -> amount.getAmount().compareTo(totalCartPrice) >= 0)
+                        .defaultIfEmpty(false) // Обработка случая, когда ответ от сервиса баланса пустой или ошибка
+                );
+    }
+
+    private Mono<Amount> getAmount(UUID userId) {
+        return manager.authorize(OAuth2AuthorizeRequest
+                        .withClientRegistrationId("store")
+                        .principal("system")
+                        .build())
+                .map(OAuth2AuthorizedClient::getAccessToken)
+                .map(OAuth2AccessToken::getTokenValue)
+                .flatMap(accessToken -> webClient.get()
+                        .uri("/balance/" + userId.toString())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                        .retrieve()
+                        .bodyToMono(Amount.class)
                 );
     }
 }

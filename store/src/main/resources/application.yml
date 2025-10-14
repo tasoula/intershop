@@ -1,3 +1,6 @@
+server:
+    port: 8080
+
 spring:
     application:
         name: Internet Shop
@@ -24,17 +27,35 @@ spring:
                 redis:
                     time-to-live: PT5S    # TTL по умолчанию для кешей
 
+    security:
+        oauth2:
+            client:
+                provider:
+                    keycloak:
+                        issuer-uri: http://localhost:8082/realms/master # Адрес сервера авторизации для получения токена
+                registration:
+                    store: # название конкретного клиента
+                        # Описание клиента OAuth2
+                        provider: keycloak
+                        authorizationGrantType: client_credentials
+                        client-id: internet-shop
+                        client-secret: SVS8gpjFD2Gm2ZAqcgbCzAaLxAJyfcXJ
+                    #    scope: profile #нужно (только зачем?) настрить роли, соответствующие scope (в Keycloak в разделе "Clients -> [ваш клиент] -> Roles")
+                        clientAuthenticationMethod: client_secret_post # Способ передачи секрета
+
 upload.images.dir: ${UPLOAD_IMAGES_DIR:/app/images}
 
-cookie:
-    max:
-        age:
-            seconds: 86400
-    logging:
-        level:
-    #        org.springframework.r2dbc.core.DefaultDatabaseClient: DEBUG # заодно включим логирование SQL-запросов
+#logging:
+#    level:
+    #     org.springframework.r2dbc.core.DefaultDatabaseClient: DEBUG # заодно включим логирование SQL-запросов
     #    io.r2dbc: DEBUG # и добавим больше деталей (не включать в настоящем приложении)
-            org.springframework.data.redis: DEBUG
+    #    org:
+    #        springframework:
+    #            data:
+    #                redis: DEBUG
+    #                security: DEBUG
+    #    org.springframework.security: DEBUG
+
 
 balance:
     service:

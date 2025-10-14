@@ -178,12 +178,22 @@ RESTful-сервис платежей:
 
 Запуск приложения "Витрина интернет-магазина":
 
-1. Запустите сервер Redis.
-2. Запуск сервиса платежей:
+1. Запустите сервер Redis. 
+```bash 
+   docker run --name redis-server -it --rm -p 6379:6379 redis:7.4.2-bookworm sh -c "redis-server && sleep 7 && redis-cli"
+```
+2. Запустите сервер авторизации Keycloack
+```bash
+docker run -d -p 8082:8080 --name keycloak ^
+  -e KC_BOOTSTRAP_ADMIN_USERNAME=admin ^
+  -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin ^
+  quay.io/keycloak/keycloak:26.1.3 start-dev
+```
+3. Запуск сервиса платежей:
 ```bash 
 ./gradlew :payment-service:bootRun  
 ```
-2. Запуск приложения "Витрина интернет-магазина":
+4. Запуск приложения "Витрина интернет-магазина":
 ```bash 
 ./gradlew :store:bootRun  
 ```

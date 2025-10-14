@@ -38,20 +38,29 @@ public class ExceptionController {
     // Обработка 400
     @ExceptionHandler({IllegalArgumentException.class, ConstraintViolationException.class})
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Mono<String> handleIllegalArgumentException() {
-        return Mono.just("exceptions/invalid-arguments.html");
+    public Mono<String> handleIllegalArgumentException(IllegalArgumentException e, Model model) {
+        return Mono.just("exceptions/invalid-arguments.html")
+                .doOnNext(item -> {
+            model.addAttribute("exception", e);
+        });
     }
 
     @ExceptionHandler({PaymentException.class})
     @ResponseStatus(HttpStatus.PAYMENT_REQUIRED)
-    public Mono<String> handlePaymentException() {
-        return Mono.just("exceptions/payment-exception.html");
+    public Mono<String> handlePaymentException(PaymentException e, Model model) {
+        return Mono.just("exceptions/payment-exception.html")
+                .doOnNext(item -> {
+                    model.addAttribute("exception", e);
+                });
     }
 
 
     @ExceptionHandler({Exception.class})
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public Mono<String> handleException(Exception e) {
-        return Mono.just("exceptions/oops.html"); // что-то пошло не так
+    public Mono<String> handleException(Exception e, Model model) {
+        return Mono.just("exceptions/oops.html")
+                .doOnNext(item -> {
+                    model.addAttribute("exception", e);
+                });
     }
 }
