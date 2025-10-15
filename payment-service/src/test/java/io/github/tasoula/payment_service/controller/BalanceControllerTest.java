@@ -28,6 +28,21 @@ class BalanceControllerTest {
     @MockitoBean
     private BalanceService service;
 
+
+    @Test
+    void testBalanceUserIdGet_shouldDeniedUnauthorized() {
+        UUID userId = UUID.randomUUID();
+        BigDecimal balance = BigDecimal.valueOf(100);
+        when(service.getBalance(userId)).thenReturn(Mono.just(balance));
+
+        webTestClient.get()
+                .uri("/balance/{userId}", userId)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isUnauthorized();
+    }
+
     @WithMockUser
     @Test
     void testBalanceUserIdGet_Success() {
@@ -55,6 +70,22 @@ class BalanceControllerTest {
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectStatus().isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @Test
+    void testPaymentUserIdPost_shouldDeniedUnauthorized() {
+        UUID userId = UUID.randomUUID();
+        Amount amount = new Amount(BigDecimal.valueOf(20));
+        when(service.withdraw(userId, amount.getAmount())).thenReturn(Mono.just(true).then()); // assume withdraw returns something if successful
+
+        webTestClient.mutateWith(csrf())
+                .post()
+                .uri("/payment/{userId}", userId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(amount)
+                .exchange()
+                .expectStatus()
+                .isUnauthorized();
     }
 
     @WithMockUser
