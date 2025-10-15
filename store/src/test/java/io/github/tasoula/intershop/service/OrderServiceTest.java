@@ -17,10 +17,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
+import org.springframework.security.oauth2.core.OAuth2RefreshToken;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -30,6 +38,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.UUID;
@@ -48,6 +57,8 @@ class OrderServiceTest {
     private CartItemRepository cartItemRepository;
     @Mock
     private ProductDataService productDataService;
+    @Mock
+    private ReactiveOAuth2AuthorizedClientManager manager;
     @InjectMocks
     private OrderService orderService;
     private MockWebServer mockWebServer;
@@ -118,7 +129,12 @@ class OrderServiceTest {
 
         String baseUrl = mockWebServer.url("/").toString();
         webClient = WebClient.builder().baseUrl(baseUrl).build();
-        orderService = new OrderService(orderRepository, orderItemRepository, cartItemRepository, productDataService, webClient); // Re-inject dependencies
+        orderService = new OrderService(orderRepository,
+                orderItemRepository,
+                cartItemRepository,
+                productDataService,
+                webClient,
+                manager); // Re-inject dependencies
     }
 
     @AfterEach
@@ -262,6 +278,30 @@ class OrderServiceTest {
     }
 
     private void prepareMockDependencies(){
+        String mockAccessTokenValue = "mock-jwt-token";
+
+        // 1. Mock Keycloak/OAuth2 Authorization Manager
+        // Create a mock OAuth2AccessToken
+        OAuth2AccessToken mockAccessToken = new OAuth2AccessToken(
+                OAuth2AccessToken.TokenType.BEARER,
+                mockAccessTokenValue,
+                Instant.now(),
+                Instant.now().plusSeconds(3600),
+                Collections.singleton("scope")
+        );
+
+        // Create a mock OAuth2AuthorizedClient
+        OAuth2AuthorizedClient mockAuthorizedClient = new OAuth2AuthorizedClient(
+                Mockito.mock(ClientRegistration.class), // Mock ClientRegistration
+                "test-principal", // Principal name
+                mockAccessToken,
+                Mockito.mock(OAuth2RefreshToken.class) // Mock Refresh Token
+        );
+
+        // Configure manager.authorize() to return our mock client
+        when(manager.authorize(any(OAuth2AuthorizeRequest.class)))
+                .thenReturn(Mono.just(mockAuthorizedClient));
+
         when(cartItemRepository.findByUserId(userId)).thenReturn(Flux.fromIterable(List.of(cartItem1, cartItem2)));
         when(productDataService.findById(productId1)).thenReturn(Mono.just(product1));
         when(productDataService.findById(productId2)).thenReturn(Mono.just(product2));
