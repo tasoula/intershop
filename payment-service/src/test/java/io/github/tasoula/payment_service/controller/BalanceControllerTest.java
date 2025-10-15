@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
@@ -17,6 +18,7 @@ import java.util.NoSuchElementException;
 import java.util.UUID;
 
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.csrf;
 
 @WebFluxTest(BalanceController.class)
 class BalanceControllerTest {
@@ -26,6 +28,7 @@ class BalanceControllerTest {
     @MockitoBean
     private BalanceService service;
 
+    @WithMockUser
     @Test
     void testBalanceUserIdGet_Success() {
         UUID userId = UUID.randomUUID();
@@ -41,6 +44,7 @@ class BalanceControllerTest {
                 .jsonPath("$.amount").isEqualTo(100);
     }
 
+    @WithMockUser
     @Test
     void testBalanceUserIdGet_ServerError() {
         UUID userId = UUID.randomUUID();
@@ -53,13 +57,15 @@ class BalanceControllerTest {
                 .expectStatus().isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
+    @WithMockUser
     @Test
     void testPaymentUserIdPost_Success() {
         UUID userId = UUID.randomUUID();
         Amount amount = new Amount(BigDecimal.valueOf(20));
         when(service.withdraw(userId, amount.getAmount())).thenReturn(Mono.just(true).then()); // assume withdraw returns something if successful
 
-        webTestClient.post()
+        webTestClient.mutateWith(csrf())
+                .post()
                 .uri("/payment/{userId}", userId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(amount)
@@ -67,13 +73,15 @@ class BalanceControllerTest {
                 .expectStatus().isOk();
     }
 
+    @WithMockUser
     @Test
     void testPaymentUserIdPost_InsufficientFunds() {
         UUID userId = UUID.randomUUID();
         Amount amount = new Amount(BigDecimal.valueOf(20));
         when(service.withdraw(userId, amount.getAmount())).thenReturn(Mono.error(new InsufficientFundsException("insufficient funds")));
 
-        webTestClient.post()
+        webTestClient.mutateWith(csrf())
+                .post()
                 .uri("/payment/{userId}", userId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(amount)
@@ -81,13 +89,15 @@ class BalanceControllerTest {
                 .expectStatus().isEqualTo(HttpStatus.PAYMENT_REQUIRED);
     }
 
+    @WithMockUser
     @Test
     void testPaymentUserIdPost_UserNotFound() {
         UUID userId = UUID.randomUUID();
         Amount amount = new Amount(BigDecimal.valueOf(20));
         when(service.withdraw(userId, amount.getAmount())).thenReturn(Mono.error(new NoSuchElementException()));
 
-        webTestClient.post()
+        webTestClient.mutateWith(csrf())
+                .post()
                 .uri("/payment/{userId}", userId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(amount)
@@ -95,13 +105,15 @@ class BalanceControllerTest {
                 .expectStatus().isNotFound();
     }
 
+    @WithMockUser
     @Test
     void testPaymentUserIdPost_ServerError() {
         UUID userId = UUID.randomUUID();
         Amount amount = new Amount(BigDecimal.valueOf(20));
         when(service.withdraw(userId, amount.getAmount())).thenReturn(Mono.error(new RuntimeException("Simulated error")));
 
-        webTestClient.post()
+        webTestClient.mutateWith(csrf())
+                .post()
                 .uri("/payment/{userId}", userId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(amount)
