@@ -1,14 +1,18 @@
 package io.github.tasoula.intershop.controller;
 
 import io.github.tasoula.intershop.dto.OrderDto;
-import io.github.tasoula.intershop.interceptor.UserInterceptor;
+import io.github.tasoula.intershop.model.User;
 import io.github.tasoula.intershop.service.OrderService;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
@@ -17,13 +21,12 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 import java.util.UUID;
 
-import static io.github.tasoula.intershop.interceptor.CookieConst.USER_ID;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.csrf;
 
-@WebFluxTest(value = OrderController.class,
-        excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = UserInterceptor.class))
+@WebFluxTest(OrderController.class)
 class OrderControllerTest {
     @Autowired
     private WebTestClient webTestClient;
@@ -31,9 +34,22 @@ class OrderControllerTest {
     @MockitoBean
     private OrderService orderService;
 
+    private static UUID userId;
+    private static Authentication userAuthentication;
+
+    @BeforeAll
+    static void beforeAll() {
+        userId = UUID.randomUUID();
+        User mockUser = new User();
+        mockUser.setId(userId);
+        mockUser.setUserName("testuser");
+        mockUser.setPassword("password");
+        mockUser.setAuthorities(List.of(new SimpleGrantedAuthority("ROLE_USER")));
+        userAuthentication = new UsernamePasswordAuthenticationToken(mockUser, null, mockUser.getAuthorities());
+    }
+
     @Test
     void show_ShouldReturnOrdersViewWithOrders() throws Exception {
-        UUID userId = UUID.randomUUID();
         OrderDto order1 = new OrderDto();
         order1.setId(UUID.randomUUID());
         OrderDto order2 = new OrderDto();
@@ -42,9 +58,9 @@ class OrderControllerTest {
         List<OrderDto> orderList = List.of(order1, order2);
         when(orderService.getByUserId(userId)).thenReturn(Flux.fromIterable(orderList));
 
-        webTestClient.get()
+        webTestClient.mutateWith(SecurityMockServerConfigurers.mockAuthentication(userAuthentication))
+                .get()
                 .uri("/orders")
-                .cookie(USER_ID, userId.toString())
                 .exchange()
                 .expectStatus().isOk()
                 .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
@@ -65,10 +81,10 @@ class OrderControllerTest {
         OrderDto order = new OrderDto(); // Mock Order object
         order.setId(orderId);
 
-
         when(orderService.getById(orderId)).thenReturn(Mono.just(order));
 
-        webTestClient.get()
+        webTestClient.mutateWith(SecurityMockServerConfigurers.mockAuthentication(userAuthentication))
+                .get()
                 .uri("/orders/" + orderId)
                 .exchange()
                 .expectStatus().isOk()
@@ -89,7 +105,8 @@ class OrderControllerTest {
         OrderDto order = new OrderDto();
         order.setId(orderId);
         when(orderService.getById(orderId)).thenReturn(Mono.just(order));
-        webTestClient.get()
+        webTestClient.mutateWith(SecurityMockServerConfigurers.mockAuthentication(userAuthentication))
+                .get()
                 .uri("/orders/" + orderId + "?newOrder=true")
                 .exchange()
                 .expectStatus().isOk()
@@ -107,14 +124,14 @@ class OrderControllerTest {
 
   @Test
     void createOrder_ShouldRedirectToOrderWithNewOrderTrue() throws Exception {
-        UUID userId = UUID.randomUUID();
         UUID orderId = UUID.randomUUID();
 
         when(orderService.createOrder(userId)).thenReturn(Mono.just(orderId));
 
-      webTestClient.post()
+      webTestClient.mutateWith(SecurityMockServerConfigurers.mockAuthentication(userAuthentication))
+              .mutateWith(csrf())
+              .post()
               .uri("/orders/new")
-              .cookie(USER_ID, userId.toString())
               .exchange()
               .expectStatus().is3xxRedirection()
               .expectHeader().valueEquals("Location", "/orders/" + orderId + "?newOrder=true");
@@ -122,17 +139,48 @@ class OrderControllerTest {
 
      @Test
     void createOrder_ShouldRedirectToCartItemsWhenOrderCreationFails() throws Exception {
-        UUID userId = UUID.randomUUID();
         when(orderService.createOrder(userId)).thenReturn(Mono.empty());
 
          when(orderService.createOrder(userId)).thenReturn(Mono.empty());
 
-         webTestClient.post()
+         webTestClient.mutateWith(SecurityMockServerConfigurers.mockAuthentication(userAuthentication))
+                 .mutateWith(csrf())
+                 .post()
                  .uri("/orders/new")
-                 .cookie(USER_ID, userId.toString())
                  .exchange()
                  .expectStatus().is3xxRedirection()
                  .expectHeader().valueEquals("Location", "/cart/items");
     }
 
+    @Test
+    void show_redirectForUnauthentificated() {
+        webTestClient.get()
+                .uri("/orders")
+                .exchange()
+                .expectStatus().isFound()
+                .expectHeader().location("/login"); // Expect redirect
+
+        Mockito.verifyNoInteractions(orderService); // Verify that the service method was never called
+    }
+
+    @Test
+    void showOrder_redirectForUnauthentificated() {
+        webTestClient.get()
+                .uri("/orders/"+UUID.randomUUID())
+                .exchange()
+                .expectStatus().isFound()
+                .expectHeader().location("/login"); // Expect redirect
+
+        Mockito.verifyNoInteractions(orderService); // Verify that the service method was never called
+    }
+
+    @Test
+    void changeProductQuantityInCart_createOrder() {
+        webTestClient.post()
+                .uri("/orders/new")
+                .exchange()
+                .expectStatus().isForbidden();
+
+        Mockito.verifyNoInteractions(orderService); // Verify that the service method was never called
+    }
 }

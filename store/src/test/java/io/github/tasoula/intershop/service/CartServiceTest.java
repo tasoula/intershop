@@ -1,70 +1,78 @@
 package io.github.tasoula.intershop.service;
-
-
 import io.github.tasoula.client.domain.Amount;
 import io.github.tasoula.intershop.dao.CartItemRepository;
-import io.github.tasoula.intershop.dao.ProductRepository;
-import io.github.tasoula.intershop.dto.ProductDto;
 import io.github.tasoula.intershop.model.Product;
 import io.github.tasoula.intershop.model.CartItem;
-import io.github.tasoula.intershop.model.User;
 import io.github.tasoula.intershop.exceptions.ResourceNotFoundException;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.web.servlet.htmlunit.MockMvcWebClientBuilder;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationContext;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
+import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
+import org.springframework.security.oauth2.core.OAuth2RefreshToken;
+import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import javax.security.sasl.AuthenticationException;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.times;
 
-/*
-@ExtendWith(MockitoExtension.class)
+@SpringBootTest
 class CartServiceTest  {
 
     @Mock
     private CartItemRepository cartItemRepository;
 
     @Mock
-    private ProductDataService productRepository;
+    private ProductDataService productDataService;
 
     @Mock
-    private WebClient webClient;
+    private  ReactiveOAuth2AuthorizedClientManager manager;
 
-    @Mock
-    private WebClient.RequestHeadersUriSpec requestHeadersUriSpec;
-
-    @Mock
-    private WebClient.RequestHeadersSpec requestHeadersSpec;
-
-    @Mock
-    private WebClient.ResponseSpec responseSpec;
-
-   @InjectMocks
+    @InjectMocks
     private CartService cartService;
 
+    public static MockWebServer mockWebServer;
+
+    private WebClient webClient;
+
+    @Autowired
+    private ApplicationContext applicationContext;
 
     private UUID userId;
     private UUID productId;
     private Product product;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws IOException {
         userId = UUID.randomUUID();
 
         productId = UUID.randomUUID();
@@ -72,6 +80,23 @@ class CartServiceTest  {
         product.setId(productId);
         product.setTitle("Test Product");
         product.setStockQuantity(10);
+
+        mockWebServer = new MockWebServer();
+        mockWebServer.start();
+
+        String baseUrl = mockWebServer.url("/").toString();
+        webClient = WebClient.builder().baseUrl(baseUrl).build();
+        cartService = new CartService(
+                cartItemRepository,
+                productDataService,
+                webClient,
+                manager); // Re-inject dependencies
+    }
+
+    @AfterEach
+    public void tearDown() throws IOException {
+        // Останавливаем MockWebServer после каждого теста
+        mockWebServer.shutdown();
     }
 
     @Test
@@ -97,8 +122,8 @@ class CartServiceTest  {
         List<CartItem> cartItems = List.of(cartItem1, cartItem2);
 
         when(cartItemRepository.findByUserIdOrderByCreatedAtDesc(userId)).thenReturn(Flux.fromIterable(cartItems));
-        when(productRepository.findById(productId)).thenReturn(Mono.just(product));
-        when(productRepository.findById(product2.getId())).thenReturn(Mono.just(product2));
+        when(productDataService.findById(productId)).thenReturn(Mono.just(product));
+        when(productDataService.findById(product2.getId())).thenReturn(Mono.just(product2));
 
 
         StepVerifier.create(cartService.findByUserId(userId))
@@ -113,15 +138,15 @@ class CartServiceTest  {
                 .verifyComplete();
 
         verify(cartItemRepository).findByUserIdOrderByCreatedAtDesc(userId);
-        verify(productRepository).findById(productId);
-        verify(productRepository).findById(productId2);
+        verify(productDataService).findById(productId);
+        verify(productDataService).findById(productId2);
     }
 
      @Test
     void changeProductQuantityInCart_productNotFound_shouldThrowException() {
          int changeQuantity = 2;
 
-         when(productRepository.findById(productId)).thenReturn(Mono.empty());
+         when(productDataService.findById(productId)).thenReturn(Mono.empty());
 
          Mono<Integer> result = cartService.changeProductQuantityInCart(userId, productId, changeQuantity);
 
@@ -138,7 +163,7 @@ class CartServiceTest  {
        int changeQuantity = 3;
        int expectedQuantity = changeQuantity; // Initial quantity equals to changeQuantity because cart item doesn't exist
 
-       when(productRepository.findById(productId)).thenReturn(Mono.just(product));
+       when(productDataService.findById(productId)).thenReturn(Mono.just(product));
        when(cartItemRepository.findByUserIdAndProductId(userId, productId)).thenReturn(Mono.empty());
        when(cartItemRepository.save(any(CartItem.class))).thenAnswer(invocation -> {
            CartItem savedCartItem = invocation.getArgument(0);
@@ -167,7 +192,7 @@ class CartServiceTest  {
              cartItem.setQuantity(2);
              int changeQuantity = -5;
 
-             when(productRepository.findById(productId)).thenReturn(Mono.just(product));
+             when(productDataService.findById(productId)).thenReturn(Mono.just(product));
              when(cartItemRepository.findByUserIdAndProductId(userId, productId)).thenReturn(Mono.just(cartItem));
              when(cartItemRepository.deleteByUserIdAndProductId(userId, productId)).thenReturn(Mono.empty()); // Simulate successful delete
 
@@ -193,7 +218,7 @@ class CartServiceTest  {
            CartItem cartItem = new CartItem(userId, productWithLimitedStock.getId());
            cartItem.setQuantity(2);
 
-          when(productRepository.findById(productWithLimitedStock.getId())).thenReturn(Mono.just(productWithLimitedStock));
+          when(productDataService.findById(productWithLimitedStock.getId())).thenReturn(Mono.just(productWithLimitedStock));
            when(cartItemRepository.findByUserIdAndProductId(userId, productId)).thenReturn(Mono.just(cartItem));
            when(cartItemRepository.save(any(CartItem.class))).thenReturn(Mono.just(cartItem));
 
@@ -216,7 +241,7 @@ class CartServiceTest  {
            int changeQuantity = 3;
            int expectedQuantity = cartItem.getQuantity() + changeQuantity;
 
-            when(productRepository.findById(productId)).thenReturn(Mono.just(product));
+            when(productDataService.findById(productId)).thenReturn(Mono.just(product));
             when(cartItemRepository.findByUserIdAndProductId(userId, productId)).thenReturn(Mono.just(cartItem));
             when(cartItemRepository.save(any(CartItem.class))).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
@@ -343,6 +368,102 @@ class CartServiceTest  {
                 .verifyComplete();
         verify(cartItemRepository, times(1)).deleteByUserIdAndProductId(userId, productId);
     }
+/*
+    @Test
+    void isAvailable_sufficientBalance_returnsTrue() {
+        // Arrange
+        BigDecimal totalCartPrice = BigDecimal.valueOf(100);
+        BigDecimal userBalance = BigDecimal.valueOf(200);
+
+        Amount amount = new Amount();
+        amount.setAmount(userBalance);
+
+        OAuth2AccessToken accessToken = new OAuth2AccessToken(
+                OAuth2AccessToken.TokenType.BEARER,
+                "mock_token",
+                Instant.now(),
+                Instant.now().plusSeconds(3600)
+        );
+
+        ClientRegistration clientRegistration = ClientRegistration.withRegistrationId("store")
+                .clientId("internet-shop")
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .clientSecret("SVS8gpjFD2Gm2ZAqcgbCzAaLxAJyfcXJ")
+                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
+
+               // .redirectUri("http://localhost/callback")
+               // .authorizationUri("https://accounts.ya.ru/o/oauth2/auth")
+                .tokenUri("https://oauth2.ya.ru/token")
+                .build();
+
+        OAuth2AuthorizedClient authorizedClient = new OAuth2AuthorizedClient(clientRegistration, "store", accessToken);
+
+        when(manager.authorize(any(OAuth2AuthorizeRequest.class))).thenReturn(Mono.just(authorizedClient));
+        when(webClient.get()).thenReturn(requestHeadersUriSpec);
+        when(requestHeadersUriSpec.uri("/balance/" + userId.toString())).thenReturn(requestHeadersUriSpec);
+        when(requestHeadersUriSpec.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken.getTokenValue()))
+                .thenReturn(requestHeadersUriSpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.bodyToMono(Amount.class)).thenReturn(Mono.just(amount));
+
+        when(cartItemRepository.calculateTotalPriceByUserId(userId)).thenReturn(Mono.just(totalCartPrice));
+
+        // Act
+        Mono<Boolean> result = cartService.isAvailable(userId);
+
+        // Assert
+        StepVerifier.create(result)
+                .expectNext(true)
+                .verifyComplete();
+    }
+
+
+
+    @Test
+    void isAvailable_shouldReturnTrueWhenBalanceIsSufficient() {
+        UUID userId = UUID.randomUUID();
+        BigDecimal cartTotalPrice = new BigDecimal("50.00");
+        BigDecimal userBalance = new BigDecimal("100.00");
+
+        // Mock CartItemRepository
+        when(cartItemRepository.calculateTotalPriceByUserId(userId)).thenReturn(Mono.just(cartTotalPrice));
+
+        // Mock OAuth2AuthorizedClientManager
+        OAuth2AccessToken accessToken = new OAuth2AccessToken(
+                OAuth2AccessToken.TokenType.BEARER,
+                "mock_token",
+                Instant.now(),
+                Instant.now().plusSeconds(3600)
+        );
+        OAuth2AuthorizedClient authorizedClient = new OAuth2AuthorizedClient(
+                "store",
+                "system",
+                accessToken
+        );
+        when(manager.authorize(any(OAuth2AuthorizeRequest.class))).thenReturn(Mono.just(authorizedClient));
+
+        // Mock WebTestClient для /balance/{userId}
+        webTestClient = webTestClient.mutate().baseUrl("http://localhost:8081").build();  // Замените порт на актуальный
+        webTestClient.get()
+                .uri("/balance/" + userId.toString())
+                .header(HttpHeaders.AUTHORIZATION, "Bearer mock_token")
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentType(MediaType.APPLICATION_JSON)
+                .expectBody()
+                .jsonPath("$.amount").isEqualTo(userBalance.doubleValue());
+
+        Mono<Boolean> isAvailableMono = cartService.isAvailable(userId);
+
+        isAvailableMono.subscribe(isAvailable -> {
+            assert isAvailable;
+        });
+
+    }
+
+ */
+
+
 
     @Test
     void isAvailable_returnsTrueWhenBalanceIsSufficient() {
@@ -351,65 +472,126 @@ class CartServiceTest  {
         BigDecimal balanceAmount = new BigDecimal("100.00");
         Amount amount = new Amount();
         amount.setAmount(balanceAmount);
-
-        // Mock CartItemRepository
         when(cartItemRepository.calculateTotalPriceByUserId(userId)).thenReturn(Mono.just(cartTotal));
 
-        // Mock WebClient interactions
-        when(webClient.get()).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.uri("/balance/" + userId.toString())).thenReturn(requestHeadersSpec);
-        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.bodyToMono(Amount.class)).thenReturn(Mono.just(amount));
+        prepareManagerMockDependencies();
+
+        mockWebServer.enqueue(new MockResponse()
+                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .setResponseCode(200)
+                .setBody("{\"userId\":\"" + userId.toString() + "\", \"amount\": " + balanceAmount.toPlainString() + "}"));
 
         Mono<Boolean> isAvailableMono = cartService.isAvailable(userId);
-        boolean isAvailable = isAvailableMono.block();
+        // Assert
+        StepVerifier.create(isAvailableMono)
+                .expectNext(true)
+                .verifyComplete();
 
-        assertEquals(true, isAvailable);
     }
 
-    @Test
+    private void prepareManagerMockDependencies() {
+        String mockAccessTokenValue = "mock-jwt-token";
+
+        // 1. Mock Keycloak/OAuth2 Authorization Manager
+        // Create a mock OAuth2AccessToken
+        OAuth2AccessToken mockAccessToken = new OAuth2AccessToken(
+                OAuth2AccessToken.TokenType.BEARER,
+                mockAccessTokenValue,
+                Instant.now(),
+                Instant.now().plusSeconds(3600),
+                Collections.singleton("scope")
+        );
+
+        // Create a mock OAuth2AuthorizedClient
+        OAuth2AuthorizedClient mockAuthorizedClient = new OAuth2AuthorizedClient(
+                Mockito.mock(ClientRegistration.class), // Mock ClientRegistration
+                "test-principal", // Principal name
+                mockAccessToken,
+                Mockito.mock(OAuth2RefreshToken.class) // Mock Refresh Token
+        );
+
+        // Configure manager.authorize() to return our mock client
+        when(manager.authorize(any(OAuth2AuthorizeRequest.class)))
+                .thenReturn(Mono.just(mockAuthorizedClient));
+    }
+
+        @Test
     void isAvailable_returnsFalseWhenBalanceIsInsufficient() {
         UUID userId = UUID.randomUUID();
         BigDecimal cartTotal = new BigDecimal("100.00");
         BigDecimal balanceAmount = new BigDecimal("50.00");
         Amount amount = new Amount();
         amount.setAmount(balanceAmount);
-
-        // Mock CartItemRepository
         when(cartItemRepository.calculateTotalPriceByUserId(userId)).thenReturn(Mono.just(cartTotal));
 
-        // Mock WebClient interactions
-        when(webClient.get()).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.uri("/balance/" + userId.toString())).thenReturn(requestHeadersSpec);
-        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.bodyToMono(Amount.class)).thenReturn(Mono.just(amount));
+        prepareManagerMockDependencies();
 
+
+        mockWebServer.enqueue(new MockResponse()
+                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .setResponseCode(200)
+                .setBody("{\"userId\":\"" + userId.toString() + "\", \"amount\": " + balanceAmount.toPlainString() + "}"));
 
         Mono<Boolean> isAvailableMono = cartService.isAvailable(userId);
-        boolean isAvailable = isAvailableMono.block();
+        // Assert
+        StepVerifier.create(isAvailableMono)
+                .expectNext(false)
+                .verifyComplete();
+    }
 
-        assertEquals(false, isAvailable);
+    @Test
+    void isAvailable_shouldReturnFalseWhenPaymentServiceReturnsError() throws InterruptedException {
+        UUID userId = UUID.randomUUID();
+        BigDecimal cartTotalPrice = new BigDecimal("100.00");
+        String mockAccessTokenValue = "mock-jwt-token";
+
+        when(cartItemRepository.calculateTotalPriceByUserId(userId))
+                .thenReturn(Mono.just(cartTotalPrice));
+
+        OAuth2AccessToken mockAccessToken = new OAuth2AccessToken(
+                OAuth2AccessToken.TokenType.BEARER, mockAccessTokenValue, Instant.now(), Instant.now().plusSeconds(3600), Collections.singleton("scope"));
+        OAuth2AuthorizedClient mockAuthorizedClient = new OAuth2AuthorizedClient(
+                Mockito.mock(ClientRegistration.class), "test-principal", mockAccessToken, null);
+        when(manager.authorize(any(OAuth2AuthorizeRequest.class)))
+                .thenReturn(Mono.just(mockAuthorizedClient));
+
+        // Simulate an error from the payment service (e.g., 500 Internal Server Error)
+        mockWebServer.enqueue(new MockResponse().setResponseCode(500));
+
+        Mono<Boolean> resultMono = cartService.isAvailable(userId);
+
+        StepVerifier.create(resultMono)
+                .expectError(RuntimeException.class)
+                .verify();
+
+        mockWebServer.takeRequest();
+        verify(manager).authorize(any(OAuth2AuthorizeRequest.class));
+        verify(cartItemRepository).calculateTotalPriceByUserId(userId);
     }
 
     @Test
     void isAvailable_returnsFalseWhenBalanceServiceReturnsError() {
         UUID userId = UUID.randomUUID();
-        BigDecimal cartTotal = new BigDecimal("50.00");
+        BigDecimal cartTotalPrice = new BigDecimal("100.00");
 
-        // Mock CartItemRepository
-        when(cartItemRepository.calculateTotalPriceByUserId(userId)).thenReturn(Mono.just(cartTotal));
+        when(cartItemRepository.calculateTotalPriceByUserId(userId))
+                .thenReturn(Mono.just(cartTotalPrice));
 
-        // Mock WebClient interactions to simulate an error (e.g., empty response)
-        when(webClient.get()).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.uri("/balance/" + userId.toString())).thenReturn(requestHeadersSpec);
-        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.bodyToMono(Amount.class)).thenReturn(Mono.empty()); // Simulate error/empty response
+        // Simulate a failure during OAuth2 authorization
+        when(manager.authorize(any(OAuth2AuthorizeRequest.class)))
+                .thenReturn(Mono.error(new AuthenticationException("Authentication failed")));
 
-        Mono<Boolean> isAvailableMono = cartService.isAvailable(userId);
-        boolean isAvailable = isAvailableMono.block();
+        Mono<Boolean> resultMono = cartService.isAvailable(userId);
 
-        assertEquals(false, isAvailable);
+        StepVerifier.create(resultMono)
+                .expectError(AuthenticationException.class) // Due to the flatMap chain and defaultIfEmpty(false)
+                .verify();
+
+        verify(manager).authorize(any(OAuth2AuthorizeRequest.class));
+        verify(cartItemRepository).calculateTotalPriceByUserId(userId);
+        // No request should be made to mockWebServer if auth fails
+
     }
 }
 
- */
+
