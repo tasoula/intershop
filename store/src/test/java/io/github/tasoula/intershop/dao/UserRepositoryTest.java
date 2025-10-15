@@ -24,8 +24,12 @@ class UserRepositoryTest extends SpringBootPostgreSQLBase{
     void setUp() {
         userRepository.deleteAll().block();
         user1 = new User();
+        user1.setUserName("user1");
+        user1.setPassword("user1");
         user1.setCreatedAt(Timestamp.from(Instant.now()));
         user2 = new User();
+        user2.setUserName("user2");
+        user2.setPassword("user2");
         user2.setCreatedAt(Timestamp.from(Instant.now()));
     }
 

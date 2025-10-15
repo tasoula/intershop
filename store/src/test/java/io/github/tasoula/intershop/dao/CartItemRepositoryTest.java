@@ -36,10 +36,13 @@ public class CartItemRepositoryTest extends SpringBootPostgreSQLBase {
     void setUp() {
         // Очищаем данные перед каждым тестом
         cartItemRepository.deleteAll().block();
+        userRepository.deleteAll().block();
 
         // Создаем пользователей
         User user1 = new User();
         user1.setCreatedAt(Timestamp.from(Instant.now()));
+        user1.setUserName("user1");
+        user1.setPassword("user1");
         user1 = userRepository.save(user1).block();
         userId1 = user1.getId();
         userId2 = UUID.randomUUID(); // Создаем второй userId без сохранения в БД

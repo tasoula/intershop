@@ -34,6 +34,8 @@ class OrderRepositoryTest extends SpringBootPostgreSQLBase{
         userRepository.deleteAll().block();
 
         User user1 =  new User();
+        user1.setUserName("user1");
+        user1.setPassword("user1");
         user1.setCreatedAt(Timestamp.from(Instant.now()));
         userId1 = userRepository.save(user1).block().getId();
 
