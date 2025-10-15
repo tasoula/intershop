@@ -44,7 +44,6 @@ public class UserService implements ReactiveUserDetailsService {
                 });
     }
 
-
     @Transactional
     public Mono<UserDetails> saveUser(User user, List<String> authorityNames) {
         // 1. Сохраняем пользователя
@@ -54,8 +53,6 @@ public class UserService implements ReactiveUserDetailsService {
                     Flux<Authority> authoritiesFlux = Flux.fromIterable(authorityNames)
                             .flatMap(authorityName -> authorityRepository.findByAuthority(authorityName)
                                     .switchIfEmpty(authorityRepository.save(new Authority(null, authorityName)))); //если authority не существует, создаем его
-                    //.defaultIfEmpty(new Authority(null, authorityName))));
-
                     // 3. Сохраняем связи между пользователем и authorities в t_users_authorities
                     return authoritiesFlux.collectList()
                             .flatMap(authorities -> {
