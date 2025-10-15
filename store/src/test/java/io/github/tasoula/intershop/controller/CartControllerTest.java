@@ -43,7 +43,6 @@ class CartControllerTest {
 
     @BeforeAll
     static void beforeAll() {
-        userId = UUID.randomUUID();
         User mockUser = new User();
         mockUser.setId(userId);
         mockUser.setUserName("testuser");
@@ -200,7 +199,7 @@ class CartControllerTest {
 
 
     @Test
-    void viewCart_accessDeniedForUnauthentificated() {
+    void viewCart_redirectForUnauthentificated() {
         webTestClient.get()
                 .uri("/cart/items")
                 .exchange()
@@ -211,7 +210,7 @@ class CartControllerTest {
     }
 
     @Test
-    void getTotal_accessDeniedForUnauthentificated() {
+    void getTotal_redirectForUnauthentificated() {
         webTestClient.get()
                 .uri("/cart/total")
                 .exchange()
@@ -222,7 +221,7 @@ class CartControllerTest {
     }
 
     @Test
-    void isEmpty_accessDeniedForUnauthentificated() {
+    void isEmpty_redirectForUnauthentificated() {
         webTestClient.get()
                 .uri("/cart/is_empty")
                 .exchange()
@@ -233,7 +232,7 @@ class CartControllerTest {
     }
 
     @Test
-    void isAvailable_accessDeniedForUnauthentificated() {
+    void isAvailable_redirectForUnauthentificated() {
         webTestClient.get()
                 .uri("/cart/is_available")
                 .exchange()
