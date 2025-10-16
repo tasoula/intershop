@@ -709,7 +709,7 @@
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
-      "secret": "kBHUpq4qgCG0tIQy78iavvOADBgCoX4o",
+      "secret": "${KEYCLOAK_CLIENT_SECRET}",
       "redirectUris": [
         "http://localhost:8080/*"
       ],

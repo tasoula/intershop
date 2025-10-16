@@ -44,6 +44,8 @@ services:
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      JAVA_OPTS_APPEND: "-Dkeycloak.migration.replace-placeholders=true"
     volumes:
       - ./keycloak-config:/opt/keycloak/data/import # Используйте относительный путь для docker-compose
     command: [ "start-dev", "--import-realm" ]
@@ -67,6 +69,7 @@ services:
       PAYMENT_SERVICE_DB_USERNAME: ${PAYMENT_SERVICE_DB_USERNAME}
       PAYMENT_SERVICE_DB_PASSWORD: ${PAYMENT_SERVICE_DB_PASSWORD}
       PAYMENT_SERVICE_DB_URL: r2dbc:postgresql://payment-postgres:5432/${PAYMENT_SERVICE_DB_NAME}
+      KEYCLOACK_ISSUER_HOST_AND_PORT: keycloak:8080
     networks:
       - mynetwork
 
@@ -87,12 +90,12 @@ services:
       REDIS_HOST: redis-server
       PAYMENT_SERVICE_HOST: payment-service
       UPLOAD_IMAGES_DIR: /app/images
+      KEYCLOACK_ISSUER_HOST_AND_PORT: keycloak:8080
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
     networks:
       - mynetwork
     volumes:
       - ./${UPLOAD_IMAGES_DIR}:/app/images
-
-
 
 volumes:
   db_data:
