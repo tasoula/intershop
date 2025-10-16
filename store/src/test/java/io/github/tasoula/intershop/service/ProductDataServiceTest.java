@@ -3,17 +3,19 @@ package io.github.tasoula.intershop.service;
 import io.github.tasoula.intershop.dao.ProductRepository;
 import io.github.tasoula.intershop.exceptions.ResourceNotFoundException;
 import io.github.tasoula.intershop.model.Product;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.cache.CacheManager;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.codec.multipart.FilePart;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -45,23 +47,8 @@ public class ProductDataServiceTest {
     private CacheManager cacheManager;
 
     @Container
+    @ServiceConnection
     private static final GenericContainer<?> redis = new GenericContainer<>("redis:7.4.2-bookworm").withExposedPorts(6379);
-
-    @DynamicPropertySource
-    static void redisProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.redis.host", redis::getHost);
-        registry.add("spring.redis.port", redis::getFirstMappedPort);
-    }
-
-    @BeforeAll // Runs before all tests, once per class
-    static void beforeAll() {
-        redis.start(); // Ensure Redis is started BEFORE Spring context is initialized
-    }
-
-    @AfterAll
-    static void afterAll() {
-        redis.stop(); // Stop Redis after all tests have finished
-    }
 
     @BeforeEach
     void setUp() {
