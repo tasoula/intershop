@@ -197,7 +197,7 @@ spring:
 ```bash 
    docker run --name redis-server -it --rm -p 6379:6379 redis:7.4.2-bookworm 
 ```
-4. Запустите сервер авторизации Keycloack
+4. Запустите сервер авторизации Keycloak
 ```bash
 docker run -d -p 8082:8080 --name keycloak ^
   -e KC_BOOTSTRAP_ADMIN_USERNAME=admin ^

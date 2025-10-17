@@ -69,7 +69,7 @@ services:
       PAYMENT_SERVICE_DB_USERNAME: ${PAYMENT_SERVICE_DB_USERNAME}
       PAYMENT_SERVICE_DB_PASSWORD: ${PAYMENT_SERVICE_DB_PASSWORD}
       PAYMENT_SERVICE_DB_URL: r2dbc:postgresql://payment-postgres:5432/${PAYMENT_SERVICE_DB_NAME}
-      KEYCLOACK_ISSUER_HOST_AND_PORT: keycloak:8080
+      KEYCLOAK_ISSUER_HOST_AND_PORT: keycloak:8080
     networks:
       - mynetwork
 
@@ -90,7 +90,7 @@ services:
       REDIS_HOST: redis-server
       PAYMENT_SERVICE_HOST: payment-service
       UPLOAD_IMAGES_DIR: /app/images
-      KEYCLOACK_ISSUER_HOST_AND_PORT: keycloak:8080
+      KEYCLOAK_ISSUER_HOST_AND_PORT: keycloak:8080
       KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
     networks:
       - mynetwork
