@@ -16,6 +16,9 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.cache.CacheManager;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.codec.multipart.FilePart;
+import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientService;
+import org.springframework.security.oauth2.client.registration.ReactiveClientRegistrationRepository;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -37,6 +40,15 @@ import static org.mockito.Mockito.*;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS) // Ensure one instance of the test class
 public class ProductDataServiceTest {
 
+    @MockitoBean
+    private ReactiveClientRegistrationRepository clientRegistrationRepository;
+
+    @MockitoBean
+    private ReactiveOAuth2AuthorizedClientService authorizedClientService;
+
+    @Container
+    @ServiceConnection
+    private static final GenericContainer<?> redis = new GenericContainer<>("redis:7.4.2-bookworm").withExposedPorts(6379);
     @MockitoSpyBean
     private ProductRepository productRepository;
     @MockitoSpyBean
@@ -45,10 +57,6 @@ public class ProductDataServiceTest {
     private ProductDataService productDataService;
     @Autowired
     private CacheManager cacheManager;
-
-    @Container
-    @ServiceConnection
-    private static final GenericContainer<?> redis = new GenericContainer<>("redis:7.4.2-bookworm").withExposedPorts(6379);
 
     @BeforeEach
     void setUp() {
