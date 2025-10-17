@@ -1,5 +1,6 @@
 package io.github.tasoula.intershop.controller;
 
+import io.github.tasoula.intershop.config.ReactiveClientMockConfig;
 import io.github.tasoula.intershop.dto.OrderDto;
 import io.github.tasoula.intershop.model.User;
 import io.github.tasoula.intershop.service.OrderService;
@@ -8,12 +9,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientService;
-import org.springframework.security.oauth2.client.registration.ReactiveClientRegistrationRepository;
 import org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -29,13 +29,8 @@ import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.csrf;
 
 @WebFluxTest(OrderController.class)
+@Import(ReactiveClientMockConfig.class)
 class OrderControllerTest {
-    @MockitoBean
-    private ReactiveClientRegistrationRepository clientRegistrationRepository;
-
-    @MockitoBean
-    private ReactiveOAuth2AuthorizedClientService authorizedClientService;
-
     @Autowired
     private WebTestClient webTestClient;
 

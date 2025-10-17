@@ -1,6 +1,7 @@
 package io.github.tasoula.intershop.service;
 
 import io.github.tasoula.client.domain.Amount;
+import io.github.tasoula.intershop.config.ReactiveClientMockConfig;
 import io.github.tasoula.intershop.dao.CartItemRepository;
 import io.github.tasoula.intershop.exceptions.ResourceNotFoundException;
 import io.github.tasoula.intershop.model.CartItem;
@@ -16,17 +17,15 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientManager;
-import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
-import org.springframework.security.oauth2.client.registration.ReactiveClientRegistrationRepository;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2RefreshToken;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -45,14 +44,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
+@Import(ReactiveClientMockConfig.class)
 class CartServiceTest  {
-
-    @MockitoBean
-    private ReactiveClientRegistrationRepository clientRegistrationRepository;
-
-    @MockitoBean
-    private ReactiveOAuth2AuthorizedClientService authorizedClientService;
-
     @Mock
     private CartItemRepository cartItemRepository;
 
