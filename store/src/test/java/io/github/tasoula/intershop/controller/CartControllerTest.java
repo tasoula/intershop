@@ -13,6 +13,8 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientService;
+import org.springframework.security.oauth2.client.registration.ReactiveClientRegistrationRepository;
 import org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -31,6 +33,12 @@ import static org.springframework.security.test.web.reactive.server.SecurityMock
 @WebFluxTest(CartController.class)
 @AutoConfigureWebTestClient
 class CartControllerTest {
+
+    @MockitoBean
+    private ReactiveClientRegistrationRepository clientRegistrationRepository;
+
+    @MockitoBean
+    private ReactiveOAuth2AuthorizedClientService authorizedClientService;
 
     @Autowired
     private WebTestClient webTestClient;
